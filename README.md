@@ -1,73 +1,136 @@
-# Welcome to your Lovable project
 
-## Project info
+# RapidCare Health Systems
 
-**URL**: https://lovable.dev/projects/30ffc9fd-9e3f-4fa3-8314-a67d80ccd596
+## Overview
 
-## How can I edit this code?
+RapidCare Health Systems is a comprehensive healthcare management system that facilitates interaction between users (patients), doctors, hospitals, and system administrators. The application provides tailored interfaces for each user type and manages various healthcare-related data including user health records, doctor consultations, hospital admissions, and more.
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React with TypeScript
+- **Backend**: Spring Boot
+- **Database**: MongoDB
+- **State Management**: React Context
+- **API Communication**: Fetch API
+- **Styling**: Tailwind CSS
+- **UI Components**: shadcn/ui
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/30ffc9fd-9e3f-4fa3-8314-a67d80ccd596) and start prompting.
+## Project Structure
 
-Changes made via Lovable will be committed automatically to this repo.
+The project is organized as follows:
 
-**Use your preferred IDE**
+- `src/components`: Reusable UI components
+  - `common`: Components shared across different user types
+  - `login`: Components related to authentication
+  - `layouts`: Layout components like authenticated layout
+- `src/models`: TypeScript interfaces for data models
+- `src/services`: API and authentication services
+- `src/pages`: Pages for different user types and functionalities
+- `src/utils`: Utility functions
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Getting Started
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Prerequisites
 
-Follow these steps:
+- Node.js v22.14.0 or later
+- NPM v10.9.2 or later
+- MongoDB installed and running
+- Spring Boot setup (see backend instructions)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Installation
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. Clone the repository
+```bash
+git clone <repository-url>
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+2. Install dependencies
+```bash
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+3. Start the development server
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Database Configuration
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+The database configuration is centralized in `src/services/database.config.ts`. You can modify this file to change database connection details.
 
-**Use GitHub Codespaces**
+```typescript
+// Example configuration
+export const databaseConfig: DatabaseConfig = {
+  name: 'HCR', // Health Care RapidCare database name
+  host: 'localhost',
+  port: 27017,
+  username: 'rapidcare_user',
+  password: 'rapidcare_password',
+  options: {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    authSource: 'admin',
+  }
+};
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Backend Setup (Spring Boot)
 
-## What technologies are used for this project?
+For the backend, you'll need to set up a Spring Boot application that connects to MongoDB and provides the necessary APIs. Here's a basic structure:
 
-This project is built with:
+1. Create a new Spring Boot project with dependencies:
+   - Spring Web
+   - Spring Data MongoDB
+   - Spring Security
+   - Spring Boot DevTools
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+2. Configure MongoDB connection in `application.properties`:
+```properties
+spring.data.mongodb.database=HCR
+spring.data.mongodb.host=localhost
+spring.data.mongodb.port=27017
+spring.data.mongodb.username=rapidcare_user
+spring.data.mongodb.password=rapidcare_password
+spring.data.mongodb.authentication-database=admin
+```
 
-## How can I deploy this project?
+3. Create models, repositories, services, and controllers for:
+   - Admin
+   - Doctor
+   - Hospital
+   - User
+   - OTP
+   - Consultation
+   - Admission
 
-Simply open [Lovable](https://lovable.dev/projects/30ffc9fd-9e3f-4fa3-8314-a67d80ccd596) and click on Share -> Publish.
+4. Implement APIs for authentication, CRUD operations, and specific business logic like OTP generation, BMI calculation, etc.
 
-## Can I connect a custom domain to my Lovable project?
+## Features
 
-Yes, you can!
+### Admin Portal
+- Dashboard with analytics and insights
+- User management (create, view, edit, delete)
+- Doctor management
+- Hospital management
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Doctor Portal
+- Personal profile management
+- Consultation management
+- User details lookup (with OTP verification)
+- Password management
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Hospital Portal
+- Hospital profile management
+- Admission management
+- User details lookup (with OTP verification)
+- Password management
+
+### User Portal
+- Personal health record management
+- View consultation history
+- View admission history
+- Password management
+
+## License
+
+This project is licensed under the MIT License.
