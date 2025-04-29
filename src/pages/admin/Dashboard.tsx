@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { Card } from "@/components/ui/card";
-import { BarChart, LineChart, PieChart } from "@/components/ui/chart";
+import { BarChart, LineChart, PieChart } from "@/components/ui/charts";
 import { apiService } from "@/services/api.service";
 
 // Chart type for disease tracking by location
