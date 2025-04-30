@@ -6,9 +6,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { User } from "@/models/models";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FormLabel } from "@/components/ui/form";
+import { Separator } from "@/components/ui/separator";
 
 const Users: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -16,14 +21,83 @@ const Users: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [activeTab, setActiveTab] = useState("basic");
   
-  // Form fields
+  // Basic user info
   const [userId, setUserId] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [dob, setDob] = useState("");
-  const [address, setAddress] = useState("");
+  
+  // Address fields
+  const [houseNumber, setHouseNumber] = useState("");
+  const [street, setStreet] = useState("");
+  const [village, setVillage] = useState("");
+  const [district, setDistrict] = useState("");
+  const [state, setState] = useState("");
+  const [country, setCountry] = useState("");
+  const [pincode, setPincode] = useState("");
+  
+  // Health information
+  const [height, setHeight] = useState<number>(170);
+  const [weight, setWeight] = useState<number>(70);
+  const [sugar, setSugar] = useState<"Yes" | "No">("No");
+  const [sugarLevel, setSugarLevel] = useState("");
+  const [bp, setBp] = useState<"Yes" | "No">("No");
+  const [bpLevel, setBpLevel] = useState("");
+  const [cardiac, setCardiac] = useState<"Yes" | "No">("No");
+  const [cardiacInfo, setCardiacInfo] = useState("");
+  const [kidney, setKidney] = useState<"Yes" | "No">("No");
+  const [kidneyInfo, setKidneyInfo] = useState("");
+  const [liver, setLiver] = useState<"Yes" | "No">("No");
+  const [liverInfo, setLiverInfo] = useState("");
+  const [lungs, setLungs] = useState<"Yes" | "No">("No");
+  const [lungsInfo, setLungsInfo] = useState("");
+  
+  // Lifestyle
+  const [smoke, setSmoke] = useState<"Yes" | "No">("No");
+  const [alcohol, setAlcohol] = useState<"Yes" | "No">("No");
+  const [inTreatment, setInTreatment] = useState<"Yes" | "No">("No");
+  
+  // Calculated fields
+  const [bmi, setBmi] = useState<number>(0);
+  const [obesity, setObesity] = useState<string>("");
+  const [age, setAge] = useState<number>(0);
+
+  useEffect(() => {
+    // Calculate BMI whenever height or weight changes
+    if (height > 0 && weight > 0) {
+      const heightInMeters = height / 100;
+      const calculatedBmi = weight / (heightInMeters * heightInMeters);
+      setBmi(Math.round(calculatedBmi * 10) / 10);
+      
+      // Determine obesity level
+      if (calculatedBmi < 18.5) {
+        setObesity("Low");
+      } else if (calculatedBmi > 25) {
+        setObesity("High");
+      } else {
+        setObesity("Correct");
+      }
+    }
+  }, [height, weight]);
+  
+  useEffect(() => {
+    // Calculate age whenever date of birth changes
+    if (dob) {
+      const birthDate = new Date(dob);
+      const today = new Date();
+      let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        calculatedAge--;
+      }
+      
+      setAge(calculatedAge);
+    }
+  }, [dob]);
 
   useEffect(() => {
     fetchUsers();
@@ -147,7 +221,37 @@ const Users: React.FC = () => {
     setEmail(user.emailId);
     setMobile(user.mobileNumber);
     setDob(user.dateOfBirth);
-    setAddress(`${user.houseNumber} ${user.street}, ${user.village}, ${user.district}, ${user.state}, ${user.country}, ${user.pincode}`);
+    
+    // Address fields
+    setHouseNumber(user.houseNumber || "");
+    setStreet(user.street || "");
+    setVillage(user.village || "");
+    setDistrict(user.district || "");
+    setState(user.state || "");
+    setCountry(user.country || "");
+    setPincode(user.pincode || "");
+    
+    // Health information
+    setHeight(user.height || 170);
+    setWeight(user.weight || 70);
+    setSugar(user.sugar || "No");
+    setSugarLevel(user.sugarLevel || "");
+    setBp(user.bp || "No");
+    setBpLevel(user.bpLevel || "");
+    setCardiac(user.cardiac || "No");
+    setCardiacInfo(user.cardiacInfo || "");
+    setKidney(user.kidney || "No");
+    setKidneyInfo(user.kidneyInfo || "");
+    setLiver(user.liver || "No");
+    setLiverInfo(user.liverInfo || "");
+    setLungs(user.lungs || "No");
+    setLungsInfo(user.lungsInfo || "");
+    
+    // Lifestyle
+    setSmoke(user.smoke || "No");
+    setAlcohol(user.alcohol || "No");
+    setInTreatment(user.inTreatment || "No");
+    
     setDialogMode('edit');
     setOpenDialog(true);
   };
@@ -186,10 +290,10 @@ const Users: React.FC = () => {
 
   const handleSubmit = async () => {
     // Basic validation
-    if (!name || !email || !mobile || !dob || !address) {
+    if (!name || !email || !mobile || !dob) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in all required fields in the Basic Info tab",
         variant: "destructive",
       });
       return;
@@ -204,28 +308,34 @@ const Users: React.FC = () => {
           mobileNumber: mobile,
           emailId: email,
           dateOfBirth: dob,
-          age: calculateAge(dob),
-          sugar: "No",
-          bp: "No",
-          cardiac: "No",
-          kidney: "No",
-          liver: "No",
-          lungs: "No",
-          smoke: "No",
-          alcohol: "No",
-          inTreatment: "No",
-          height: 170, // Default values
-          weight: 70,
-          bmi: 24.2,
-          obesityLevel: "Correct",
-          houseNumber: "123", // Simplified for demo
-          street: "Street",
-          village: "Village",
-          district: "District",
-          state: "State",
-          country: "Country",
-          pincode: "12345",
-          password: "password", 
+          age: age,
+          sugar: sugar,
+          sugarLevel: sugar === "Yes" ? sugarLevel : undefined,
+          bp: bp,
+          bpLevel: bp === "Yes" ? bpLevel : undefined,
+          cardiac: cardiac,
+          cardiacInfo: cardiac === "Yes" ? cardiacInfo : undefined,
+          kidney: kidney,
+          kidneyInfo: kidney === "Yes" ? kidneyInfo : undefined,
+          liver: liver,
+          liverInfo: liver === "Yes" ? liverInfo : undefined,
+          lungs: lungs,
+          lungsInfo: lungs === "Yes" ? lungsInfo : undefined,
+          smoke: smoke,
+          alcohol: alcohol,
+          inTreatment: inTreatment,
+          height: height,
+          weight: weight, 
+          bmi: bmi, 
+          obesityLevel: obesity as "Low" | "Correct" | "High",
+          houseNumber: houseNumber,
+          street: street,
+          village: village,
+          district: district,
+          state: state,
+          country: country,
+          pincode: pincode,
+          password: "password", // Default password
           createdDate: new Date().getDate().toString(),
           createdMonth: new Date().toLocaleString('default', { month: 'long' }),
           createdYear: new Date().getFullYear().toString()
@@ -240,7 +350,7 @@ const Users: React.FC = () => {
             name, 
             email, 
             mobile_number: mobile, 
-            dob, 
+            dob,
             // ... other fields 
           }]);
           
@@ -262,7 +372,33 @@ const Users: React.FC = () => {
             emailId: email,
             mobileNumber: mobile,
             dateOfBirth: dob,
-            // Update address fields would be handled properly in a real app
+            age: age,
+            sugar: sugar,
+            sugarLevel: sugar === "Yes" ? sugarLevel : undefined,
+            bp: bp,
+            bpLevel: bp === "Yes" ? bpLevel : undefined,
+            cardiac: cardiac,
+            cardiacInfo: cardiac === "Yes" ? cardiacInfo : undefined,
+            kidney: kidney,
+            kidneyInfo: kidney === "Yes" ? kidneyInfo : undefined,
+            liver: liver,
+            liverInfo: liver === "Yes" ? liverInfo : undefined,
+            lungs: lungs,
+            lungsInfo: lungs === "Yes" ? lungsInfo : undefined,
+            smoke: smoke,
+            alcohol: alcohol,
+            inTreatment: inTreatment,
+            height: height,
+            weight: weight, 
+            bmi: bmi, 
+            obesityLevel: obesity as "Low" | "Correct" | "High",
+            houseNumber: houseNumber,
+            street: street,
+            village: village,
+            district: district,
+            state: state,
+            country: country,
+            pincode: pincode,
           } : user
         );
         
@@ -275,7 +411,7 @@ const Users: React.FC = () => {
             name, 
             email, 
             mobile_number: mobile, 
-            dob, 
+            dob,
             // ... other fields 
           })
           .eq('id', selectedUser.userId);
@@ -308,21 +444,83 @@ const Users: React.FC = () => {
     setEmail("");
     setMobile("");
     setDob("");
-    setAddress("");
+    
+    // Reset address fields
+    setHouseNumber("");
+    setStreet("");
+    setVillage("");
+    setDistrict("");
+    setState("");
+    setCountry("");
+    setPincode("");
+    
+    // Reset health information
+    setHeight(170);
+    setWeight(70);
+    setSugar("No");
+    setSugarLevel("");
+    setBp("No");
+    setBpLevel("");
+    setCardiac("No");
+    setCardiacInfo("");
+    setKidney("No");
+    setKidneyInfo("");
+    setLiver("No");
+    setLiverInfo("");
+    setLungs("No");
+    setLungsInfo("");
+    
+    // Reset lifestyle
+    setSmoke("No");
+    setAlcohol("No");
+    setInTreatment("No");
+    
+    // Reset calculated fields
+    setBmi(0);
+    setObesity("Correct");
+    setAge(0);
+    
+    // Reset active tab
+    setActiveTab("basic");
   };
 
-  const calculateAge = (dob: string): number => {
-    const birthDate = new Date(dob);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
+  const renderYesNoSelect = (
+    value: "Yes" | "No", 
+    onChange: (value: "Yes" | "No") => void,
+    label: string,
+    additionalField?: {
+      value: string,
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
+      placeholder: string
     }
-    
-    return age;
-  };
+  ) => (
+    <div className="space-y-2">
+      <div className="flex items-center gap-4">
+        <div className="w-32">
+          <Label>{label}</Label>
+        </div>
+        <Select value={value} onValueChange={(v) => onChange(v as "Yes" | "No")}>
+          <SelectTrigger className="w-24">
+            <SelectValue placeholder="Select" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Yes">Yes</SelectItem>
+            <SelectItem value="No">No</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      {value === "Yes" && additionalField && (
+        <div className="ml-36">
+          <Input 
+            value={additionalField.value} 
+            onChange={additionalField.onChange}
+            placeholder={additionalField.placeholder}
+          />
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <AuthenticatedLayout requiredUserType="admin">
@@ -342,146 +540,381 @@ const Users: React.FC = () => {
             ) : users.length === 0 ? (
               <p>No users found.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Mobile</TableHead>
-                    <TableHead>Age</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.userId}>
-                      <TableCell>{user.userId}</TableCell>
-                      <TableCell>{user.name}</TableCell>
-                      <TableCell>{user.emailId}</TableCell>
-                      <TableCell>{user.mobileNumber}</TableCell>
-                      <TableCell>{user.age}</TableCell>
-                      <TableCell className="flex space-x-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => handleEditUser(user)}
-                        >
-                          Edit
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive" 
-                          onClick={() => handleDeleteUser(user.userId)}
-                        >
-                          Delete
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User ID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Mobile</TableHead>
+                      <TableHead>Age</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.userId}>
+                        <TableCell>{user.userId}</TableCell>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>{user.emailId}</TableCell>
+                        <TableCell>{user.mobileNumber}</TableCell>
+                        <TableCell>{user.age}</TableCell>
+                        <TableCell className="flex space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleEditUser(user)}
+                          >
+                            Edit
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive" 
+                            onClick={() => handleDeleteUser(user.userId)}
+                          >
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
 
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {dialogMode === 'create' ? 'Create New User' : 'Edit User'}
             </DialogTitle>
+            <DialogDescription>
+              Fill in the user details across all tabs.
+            </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4 grid gap-4">
-            {dialogMode === 'edit' && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-4 mb-4">
+              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="address">Address</TabsTrigger>
+              <TabsTrigger value="health">Health</TabsTrigger>
+              <TabsTrigger value="lifestyle">Lifestyle</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="basic" className="space-y-4">
+              {dialogMode === 'edit' && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="userId" className="text-right text-sm font-medium">
+                    User ID
+                  </Label>
+                  <Input 
+                    id="userId" 
+                    value={userId} 
+                    className="col-span-3" 
+                    disabled 
+                  />
+                </div>
+              )}
+              
               <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="userId" className="text-right text-sm font-medium">
-                  User ID
-                </label>
+                <Label htmlFor="name" className="text-right text-sm font-medium">
+                  Full Name *
+                </Label>
                 <Input 
-                  id="userId" 
-                  value={userId} 
-                  onChange={(e) => setUserId(e.target.value)} 
+                  id="name" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)} 
                   className="col-span-3" 
-                  disabled 
+                  placeholder="Enter user's full name" 
+                  required
                 />
               </div>
-            )}
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right text-sm font-medium">
+                  Email *
+                </Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  className="col-span-3" 
+                  placeholder="Enter user's email" 
+                  required
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="mobile" className="text-right text-sm font-medium">
+                  Mobile *
+                </Label>
+                <Input 
+                  id="mobile" 
+                  value={mobile} 
+                  onChange={(e) => setMobile(e.target.value)} 
+                  className="col-span-3" 
+                  placeholder="Enter user's mobile number" 
+                  required
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="dob" className="text-right text-sm font-medium">
+                  Date of Birth *
+                </Label>
+                <div className="col-span-3 flex items-center gap-4">
+                  <Input 
+                    id="dob" 
+                    type="date" 
+                    value={dob} 
+                    onChange={(e) => setDob(e.target.value)} 
+                    className="w-full" 
+                    required
+                  />
+                  {age > 0 && (
+                    <span className="text-sm text-muted-foreground">Age: {age} years</span>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="name" className="text-right text-sm font-medium">
-                Name
-              </label>
-              <Input 
-                id="name" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                className="col-span-3" 
-                placeholder="Enter user's name" 
-              />
-            </div>
+            <TabsContent value="address" className="space-y-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="houseNumber" className="text-right text-sm font-medium">
+                  House/Building Number
+                </Label>
+                <Input 
+                  id="houseNumber" 
+                  value={houseNumber} 
+                  onChange={(e) => setHouseNumber(e.target.value)} 
+                  className="col-span-3" 
+                  placeholder="Enter house/building number" 
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="street" className="text-right text-sm font-medium">
+                  Street/Road
+                </Label>
+                <Input 
+                  id="street" 
+                  value={street} 
+                  onChange={(e) => setStreet(e.target.value)} 
+                  className="col-span-3" 
+                  placeholder="Enter street/road" 
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="village" className="text-right text-sm font-medium">
+                  Village/Area/Locality
+                </Label>
+                <Input 
+                  id="village" 
+                  value={village} 
+                  onChange={(e) => setVillage(e.target.value)} 
+                  className="col-span-3" 
+                  placeholder="Enter village/area/locality" 
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="district" className="text-right text-sm font-medium">
+                  District/City
+                </Label>
+                <Input 
+                  id="district" 
+                  value={district} 
+                  onChange={(e) => setDistrict(e.target.value)} 
+                  className="col-span-3" 
+                  placeholder="Enter district/city" 
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="state" className="text-right text-sm font-medium">
+                  State/Province
+                </Label>
+                <Input 
+                  id="state" 
+                  value={state} 
+                  onChange={(e) => setState(e.target.value)} 
+                  className="col-span-3" 
+                  placeholder="Enter state/province" 
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="country" className="text-right text-sm font-medium">
+                  Country
+                </Label>
+                <Input 
+                  id="country" 
+                  value={country} 
+                  onChange={(e) => setCountry(e.target.value)} 
+                  className="col-span-3" 
+                  placeholder="Enter country" 
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="pincode" className="text-right text-sm font-medium">
+                  Pincode/Zipcode
+                </Label>
+                <Input 
+                  id="pincode" 
+                  value={pincode} 
+                  onChange={(e) => setPincode(e.target.value)} 
+                  className="col-span-3" 
+                  placeholder="Enter pincode/zipcode" 
+                />
+              </div>
+            </TabsContent>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="email" className="text-right text-sm font-medium">
-                Email
-              </label>
-              <Input 
-                id="email" 
-                type="email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                className="col-span-3" 
-                placeholder="Enter user's email" 
-              />
-            </div>
+            <TabsContent value="health" className="space-y-4">
+              <div className="grid grid-cols-1 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Physical Measurements</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="height">Height (cm)</Label>
+                      <Input 
+                        id="height" 
+                        type="number" 
+                        value={height} 
+                        onChange={(e) => setHeight(Number(e.target.value))} 
+                        placeholder="Height in centimeters" 
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="weight">Weight (kg)</Label>
+                      <Input 
+                        id="weight" 
+                        type="number" 
+                        value={weight} 
+                        onChange={(e) => setWeight(Number(e.target.value))} 
+                        placeholder="Weight in kilograms" 
+                      />
+                    </div>
+                  </div>
+                  
+                  {bmi > 0 && (
+                    <div className="p-4 bg-muted rounded-md">
+                      <p className="font-medium">BMI: {bmi}</p>
+                      <p>Obesity Level: {obesity}</p>
+                    </div>
+                  )}
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Medical Conditions</h3>
+                  
+                  <div className="space-y-4">
+                    {renderYesNoSelect(
+                      sugar, 
+                      setSugar, 
+                      "Diabetes/Sugar", 
+                      {value: sugarLevel, onChange: (e) => setSugarLevel(e.target.value), placeholder: "Sugar level (e.g. 120 mg/dL)"}
+                    )}
+                    
+                    {renderYesNoSelect(
+                      bp, 
+                      setBp, 
+                      "Blood Pressure", 
+                      {value: bpLevel, onChange: (e) => setBpLevel(e.target.value), placeholder: "BP level (e.g. 120/80 mmHg)"}
+                    )}
+                    
+                    {renderYesNoSelect(
+                      cardiac, 
+                      setCardiac, 
+                      "Cardiac Issues", 
+                      {value: cardiacInfo, onChange: (e) => setCardiacInfo(e.target.value), placeholder: "Details about cardiac condition"}
+                    )}
+                    
+                    {renderYesNoSelect(
+                      kidney, 
+                      setKidney, 
+                      "Kidney Issues", 
+                      {value: kidneyInfo, onChange: (e) => setKidneyInfo(e.target.value), placeholder: "Details about kidney condition"}
+                    )}
+                    
+                    {renderYesNoSelect(
+                      liver, 
+                      setLiver, 
+                      "Liver Issues", 
+                      {value: liverInfo, onChange: (e) => setLiverInfo(e.target.value), placeholder: "Details about liver condition"}
+                    )}
+                    
+                    {renderYesNoSelect(
+                      lungs, 
+                      setLungs, 
+                      "Lung Issues", 
+                      {value: lungsInfo, onChange: (e) => setLungsInfo(e.target.value), placeholder: "Details about lung condition"}
+                    )}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="mobile" className="text-right text-sm font-medium">
-                Mobile
-              </label>
-              <Input 
-                id="mobile" 
-                value={mobile} 
-                onChange={(e) => setMobile(e.target.value)} 
-                className="col-span-3" 
-                placeholder="Enter user's mobile number" 
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="dob" className="text-right text-sm font-medium">
-                Date of Birth
-              </label>
-              <Input 
-                id="dob" 
-                type="date" 
-                value={dob} 
-                onChange={(e) => setDob(e.target.value)} 
-                className="col-span-3" 
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="address" className="text-right text-sm font-medium">
-                Address
-              </label>
-              <Textarea 
-                id="address" 
-                value={address} 
-                onChange={(e) => setAddress(e.target.value)} 
-                className="col-span-3" 
-                placeholder="Enter user's address" 
-              />
-            </div>
-          </div>
+            <TabsContent value="lifestyle" className="space-y-4">
+              <div className="grid grid-cols-1 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Lifestyle Habits</h3>
+                  
+                  <div className="space-y-4">
+                    {renderYesNoSelect(smoke, setSmoke, "Smoking")}
+                    {renderYesNoSelect(alcohol, setAlcohol, "Alcohol Consumption")}
+                    {renderYesNoSelect(inTreatment, setInTreatment, "Currently In Treatment")}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button onClick={handleSubmit}>
-              {dialogMode === 'create' ? 'Create' : 'Save Changes'}
-            </Button>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0 mt-4">
+            <div className="flex-1 flex justify-start">
+              {activeTab !== "basic" && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const tabs = ["basic", "address", "health", "lifestyle"];
+                    const currentIndex = tabs.indexOf(activeTab);
+                    setActiveTab(tabs[currentIndex - 1]);
+                  }}
+                >
+                  Previous
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setOpenDialog(false)}>
+                Cancel
+              </Button>
+              {activeTab !== "lifestyle" ? (
+                <Button 
+                  onClick={() => {
+                    const tabs = ["basic", "address", "health", "lifestyle"];
+                    const currentIndex = tabs.indexOf(activeTab);
+                    setActiveTab(tabs[currentIndex + 1]);
+                  }}
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button onClick={handleSubmit}>
+                  {dialogMode === 'create' ? 'Create' : 'Save Changes'}
+                </Button>
+              )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

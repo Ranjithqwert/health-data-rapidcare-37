@@ -78,11 +78,12 @@ class AuthService {
         // In a real implementation, check the password against a hashed version in the database
         // This is simplified for demonstration purposes
         try {
+          // Using maybeSingle() instead of single() to avoid errors with missing data
           const { data, error } = await supabase
             .from(tableName)
             .select('id, name')
             .eq('id', request.userId)
-            .single();
+            .maybeSingle();
             
           if (error || !data) {
             console.error("Supabase error:", error);
@@ -93,15 +94,15 @@ class AuthService {
           // For now, we're allowing any password for demonstration
           const token = `${request.userType}-token-${Date.now()}`;
           localStorage.setItem('token', token);
-          localStorage.setItem('userId', data.id);
+          localStorage.setItem('userId', data.id || '');
           localStorage.setItem('userType', request.userType);
-          localStorage.setItem('userName', data.name);
+          localStorage.setItem('userName', data.name || '');
           
           return {
             success: true,
             token,
-            userId: data.id,
-            name: data.name
+            userId: data.id || '',
+            name: data.name || ''
           };
         } catch (error) {
           console.error("Database query error:", error);

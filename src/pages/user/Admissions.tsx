@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { authService } from "@/services/auth.service";
@@ -133,7 +132,7 @@ const Admissions: React.FC = () => {
                       <TableCell>
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="outline">View Details</Button>
+                            <Button variant="default">View Details</Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
