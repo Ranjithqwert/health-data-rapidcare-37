@@ -77,11 +77,13 @@ class AuthService {
         
         // In a real implementation, check the password against a hashed version in the database
         // This is simplified for demonstration purposes
-        const { data, error } = await supabase
+        let query = supabase
           .from(tableName)
           .select('id, name')
           .eq('id', request.userId)
           .single();
+          
+        const { data, error } = await query;
           
         if (error || !data) {
           console.error("Supabase error:", error);
