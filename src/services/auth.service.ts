@@ -98,13 +98,19 @@ class AuthService {
           // For now, we're allowing any password for demonstration
           const token = `${request.userType}-token-${Date.now()}`;
           
-          // Correctly extract values from the data object
-          // Using type assertions to assure TypeScript that these properties exist
-          const userId = typeof data.id === 'string' || typeof data.id === 'number' ? 
-                         String(data.id) : '';
-                         
-          const userName = typeof data.name === 'string' ? 
-                          data.name : '';
+          // Correctly extract values from the data object with proper type checking
+          let userId = '';
+          let userName = '';
+          
+          if (data && typeof data === 'object') {
+            if ('id' in data && (typeof data.id === 'string' || typeof data.id === 'number')) {
+              userId = String(data.id);
+            }
+            
+            if ('name' in data && typeof data.name === 'string') {
+              userName = data.name;
+            }
+          }
           
           localStorage.setItem('token', token);
           localStorage.setItem('userId', userId);
@@ -142,13 +148,91 @@ class AuthService {
   // Send OTP for password reset
   async sendOTP(userId: string, userType: 'doctor' | 'hospital' | 'user'): Promise<boolean> {
     try {
-      // For demonstration, we'll just log the OTP request
-      console.log(`OTP request for ${userType} with ID: ${userId}`);
+      // Get the user's email based on userType
+      let tableName;
+      let email = '';
+      
+      switch (userType) {
+        case 'doctor': tableName = 'doctors'; break;
+        case 'hospital': tableName = 'hospitals'; break;
+        case 'user': tableName = 'patients'; break;
+        default: return false;
+      }
+      
+      // Get user email from the appropriate table
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('email')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (error || !data || !data.email) {
+        console.error("Error fetching user email:", error);
+        toast({
+          title: "Error",
+          description: "User not found or email not available.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      email = data.email;
+      
+      // Generate a 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Store OTP in Supabase with expiration time (10 minutes)
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes from now
+      
+      // Check if an OTP entry already exists
+      const { data: existingOtp } = await supabase
+        .from('otps')
+        .select()
+        .eq('user_id', userId)
+        .eq('user_type', userType)
+        .maybeSingle();
+      
+      if (existingOtp) {
+        // Update existing OTP
+        const { error: updateError } = await supabase
+          .from('otps')
+          .update({
+            otp_code: otp,
+            expires_at: expiresAt.toISOString()
+          })
+          .eq('user_id', userId)
+          .eq('user_type', userType);
+          
+        if (updateError) {
+          console.error("Error updating OTP:", updateError);
+          return false;
+        }
+      } else {
+        // Create new OTP entry
+        const { error: insertError } = await supabase
+          .from('otps')
+          .insert({
+            user_id: userId,
+            user_type: userType,
+            otp_code: otp,
+            expires_at: expiresAt.toISOString()
+          });
+          
+        if (insertError) {
+          console.error("Error creating OTP:", insertError);
+          return false;
+        }
+      }
+      
+      // In a real application, send email with OTP
+      console.log(`OTP for ${userType} with ID ${userId}: ${otp} (would be sent to ${email})`);
       
       toast({
         title: "OTP Sent",
-        description: "An OTP has been sent to your registered email address.",
+        description: `An OTP has been sent to ${email}.`,
       });
+      
       return true;
     } catch (error) {
       console.error("Send OTP error:", error);
@@ -164,8 +248,39 @@ class AuthService {
   // Verify OTP
   async verifyOTP(userId: string, otp: string, userType: 'doctor' | 'hospital' | 'user'): Promise<boolean> {
     try {
-      // For demonstration, we'll accept any OTP value
-      if (otp.length > 0) {
+      // Get the stored OTP for this user
+      const { data, error } = await supabase
+        .from('otps')
+        .select('otp_code, expires_at')
+        .eq('user_id', userId)
+        .eq('user_type', userType)
+        .maybeSingle();
+      
+      if (error || !data) {
+        console.error("Error fetching OTP:", error);
+        toast({
+          title: "Error",
+          description: "Invalid or expired OTP. Please request a new one.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      // Check if OTP is expired
+      const now = new Date();
+      const expiresAt = new Date(data.expires_at);
+      
+      if (now > expiresAt) {
+        toast({
+          title: "Error",
+          description: "OTP has expired. Please request a new one.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      // Check if OTP matches
+      if (data.otp_code === otp) {
         toast({
           title: "OTP Verified",
           description: "OTP verification successful.",
@@ -193,8 +308,38 @@ class AuthService {
   // Reset password
   async resetPassword(request: ResetPasswordRequest): Promise<boolean> {
     try {
-      // For demonstration, just log the password reset
-      console.log(`Password reset for ${request.userType} with ID: ${request.userId}`);
+      // Update password in the appropriate table
+      let tableName;
+      
+      switch (request.userType) {
+        case 'doctor': tableName = 'doctors'; break;
+        case 'hospital': tableName = 'hospitals'; break;
+        case 'user': tableName = 'patients'; break;
+        default: return false;
+      }
+      
+      // In a real application, you would hash the password before storing it
+      const { error } = await supabase
+        .from(tableName)
+        .update({ password: request.newPassword }) // In production, this should be a hashed password
+        .eq('id', request.userId);
+        
+      if (error) {
+        console.error("Error resetting password:", error);
+        toast({
+          title: "Error",
+          description: "Failed to reset password. Please try again.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      // Delete the OTP entry after successful password reset
+      await supabase
+        .from('otps')
+        .delete()
+        .eq('user_id', request.userId)
+        .eq('user_type', request.userType);
       
       toast({
         title: "Password Reset",
