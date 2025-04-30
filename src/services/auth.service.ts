@@ -85,24 +85,33 @@ class AuthService {
             .eq('id', request.userId)
             .maybeSingle();
             
-          if (error || !data) {
+          if (error) {
             console.error("Supabase error:", error);
+            return { success: false, error: 'User not found' };
+          }
+          
+          if (!data) {
             return { success: false, error: 'User not found' };
           }
           
           // In a real application, you would verify the password here
           // For now, we're allowing any password for demonstration
           const token = `${request.userType}-token-${Date.now()}`;
+          
+          // Safely access properties after checking data exists
+          const userId = data.id ? String(data.id) : '';
+          const userName = data.name ? String(data.name) : '';
+          
           localStorage.setItem('token', token);
-          localStorage.setItem('userId', data.id || '');
+          localStorage.setItem('userId', userId);
           localStorage.setItem('userType', request.userType);
-          localStorage.setItem('userName', data.name || '');
+          localStorage.setItem('userName', userName);
           
           return {
             success: true,
             token,
-            userId: data.id || '',
-            name: data.name || ''
+            userId,
+            name: userName
           };
         } catch (error) {
           console.error("Database query error:", error);
