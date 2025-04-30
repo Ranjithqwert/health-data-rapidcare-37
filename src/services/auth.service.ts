@@ -98,9 +98,13 @@ class AuthService {
           // For now, we're allowing any password for demonstration
           const token = `${request.userType}-token-${Date.now()}`;
           
-          // Safely access properties after checking data exists
-          const userId = data.id ? String(data.id) : '';
-          const userName = data.name ? String(data.name) : '';
+          // Correctly extract values from the data object
+          // Using type assertions to assure TypeScript that these properties exist
+          const userId = typeof data.id === 'string' || typeof data.id === 'number' ? 
+                         String(data.id) : '';
+                         
+          const userName = typeof data.name === 'string' ? 
+                          data.name : '';
           
           localStorage.setItem('token', token);
           localStorage.setItem('userId', userId);
