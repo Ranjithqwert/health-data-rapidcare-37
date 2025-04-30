@@ -103,11 +103,11 @@ class AuthService {
           let userName = '';
           
           if (data && typeof data === 'object') {
-            if ('id' in data && (typeof data.id === 'string' || typeof data.id === 'number')) {
+            if ('id' in data && data.id !== null && (typeof data.id === 'string' || typeof data.id === 'number')) {
               userId = String(data.id);
             }
             
-            if ('name' in data && typeof data.name === 'string') {
+            if ('name' in data && data.name !== null && typeof data.name === 'string') {
               userName = data.name;
             }
           }
@@ -150,7 +150,6 @@ class AuthService {
     try {
       // Get the user's email based on userType
       let tableName;
-      let email = '';
       
       switch (userType) {
         case 'doctor': tableName = 'doctors'; break;
@@ -160,14 +159,14 @@ class AuthService {
       }
       
       // Get user email from the appropriate table
-      const { data, error } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from(tableName)
         .select('email')
         .eq('id', userId)
         .maybeSingle();
         
-      if (error || !data || !data.email) {
-        console.error("Error fetching user email:", error);
+      if (userError || !userData || !userData.email) {
+        console.error("Error fetching user email:", userError);
         toast({
           title: "Error",
           description: "User not found or email not available.",
@@ -176,7 +175,7 @@ class AuthService {
         return false;
       }
       
-      email = data.email;
+      const email = userData.email;
       
       // Generate a 6-digit OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -186,12 +185,17 @@ class AuthService {
       expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes from now
       
       // Check if an OTP entry already exists
-      const { data: existingOtp } = await supabase
+      const { data: existingOtp, error: selectError } = await supabase
         .from('otps')
         .select()
         .eq('user_id', userId)
         .eq('user_type', userType)
         .maybeSingle();
+      
+      if (selectError) {
+        console.error("Error checking existing OTP:", selectError);
+        return false;
+      }
       
       if (existingOtp) {
         // Update existing OTP

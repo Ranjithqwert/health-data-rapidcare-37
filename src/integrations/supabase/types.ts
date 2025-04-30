@@ -280,6 +280,33 @@ export type Database = {
         }
         Relationships: []
       }
+      otps: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          otp_code: string
+          user_id: string
+          user_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          otp_code: string
+          user_id: string
+          user_type: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          user_id?: string
+          user_type?: string
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           age: number | null
