@@ -77,33 +77,36 @@ class AuthService {
         
         // In a real implementation, check the password against a hashed version in the database
         // This is simplified for demonstration purposes
-        let query = supabase
-          .from(tableName)
-          .select('id, name')
-          .eq('id', request.userId)
-          .single();
+        try {
+          const { data, error } = await supabase
+            .from(tableName)
+            .select('id, name')
+            .eq('id', request.userId)
+            .single();
+            
+          if (error || !data) {
+            console.error("Supabase error:", error);
+            return { success: false, error: 'User not found' };
+          }
           
-        const { data, error } = await query;
+          // In a real application, you would verify the password here
+          // For now, we're allowing any password for demonstration
+          const token = `${request.userType}-token-${Date.now()}`;
+          localStorage.setItem('token', token);
+          localStorage.setItem('userId', data.id);
+          localStorage.setItem('userType', request.userType);
+          localStorage.setItem('userName', data.name);
           
-        if (error || !data) {
-          console.error("Supabase error:", error);
-          return { success: false, error: 'User not found' };
+          return {
+            success: true,
+            token,
+            userId: data.id,
+            name: data.name
+          };
+        } catch (error) {
+          console.error("Database query error:", error);
+          return { success: false, error: 'User not found or database error' };
         }
-        
-        // In a real application, you would verify the password here
-        // For now, we're allowing any password for demonstration
-        const token = `${request.userType}-token-${Date.now()}`;
-        localStorage.setItem('token', token);
-        localStorage.setItem('userId', data.id);
-        localStorage.setItem('userType', request.userType);
-        localStorage.setItem('userName', data.name);
-        
-        return {
-          success: true,
-          token,
-          userId: data.id,
-          name: data.name
-        };
       }
     } catch (error) {
       console.error("Login error:", error);
