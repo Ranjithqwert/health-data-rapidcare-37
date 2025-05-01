@@ -560,14 +560,23 @@ class ApiService {
         if (patient.lungs) usersByDisease.Lungs++;
       });
 
-      // Get users by addiction
+      // Get users by addiction - we need to fetch addiction data separately
+      const { data: addictionData, error: addictionError } = await supabase
+        .from('patients')
+        .select('smoke, alcohol');
+
+      if (addictionError) {
+        console.error("Error fetching addiction data:", addictionError);
+        return null;
+      }
+
       const usersByAddiction: { [key: string]: number } = {
         Smoke: 0,
         Alcohol: 0,
         None: 0
       };
 
-      patientsData?.forEach(patient => {
+      addictionData?.forEach(patient => {
         if (patient.smoke && patient.alcohol) {
           usersByAddiction.Smoke++;
           usersByAddiction.Alcohol++;
