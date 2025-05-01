@@ -28,13 +28,26 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children, req
   }
   
   return (
-    <div className="flex">
+    <div className="flex h-screen">
       <SideNav 
         isMobileSidebarOpen={isMobileSidebarOpen}
         setMobileSidebarOpen={setMobileSidebarOpen}
       />
-      <main className="page-container flex-1">
-        {children}
+      
+      <div className="md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 z-10 hidden">
+        {/* Desktop Sidebar */}
+        <div className="md:flex md:flex-col md:flex-grow md:bg-white md:border-r md:border-gray-200">
+          <SideNav 
+            isMobileSidebarOpen={isMobileSidebarOpen}
+            setMobileSidebarOpen={setMobileSidebarOpen}
+          />
+        </div>
+      </div>
+      
+      <main className="flex-1 overflow-auto bg-gray-50 md:ml-64">
+        <div className="page-container p-6">
+          {children}
+        </div>
       </main>
     </div>
   );

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { authService } from "@/services/auth.service";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,7 @@ import {
   LogOut,
   Menu,
   X,
-  Key  // Added Key icon for Change Password
+  Key
 } from "lucide-react";
 
 interface SideNavProps {
@@ -22,8 +23,7 @@ interface SideNavProps {
 
 const SideNav = ({ isMobileSidebarOpen, setMobileSidebarOpen }: SideNavProps) => {
   const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
+  
   // Get the current user type
   const userType = authService.getUserType();
 
@@ -77,15 +77,20 @@ const SideNav = ({ isMobileSidebarOpen, setMobileSidebarOpen }: SideNavProps) =>
   }
 
   return (
-    <div className="md:hidden">
-      <Button variant="outline" size="icon" onClick={() => setMobileSidebarOpen(true)}>
-        <Menu className="h-5 w-5" />
-      </Button>
+    <>
+      {/* Mobile menu button */}
+      <div className="md:hidden fixed top-0 left-0 z-40 p-4">
+        <Button variant="outline" size="icon" onClick={() => setMobileSidebarOpen(true)}>
+          <Menu className="h-5 w-5" />
+        </Button>
+      </div>
       
+      {/* Mobile sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 h-full w-64 bg-white border-r border-gray-200 transition-transform transform-translate-x-0",
+          "fixed left-0 top-0 z-50 h-full w-64 bg-white border-r border-gray-200 transition-transform transform",
           isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full",
+          "md:hidden"
         )}
       >
         <div className="flex items-center justify-between p-4">
@@ -124,7 +129,43 @@ const SideNav = ({ isMobileSidebarOpen, setMobileSidebarOpen }: SideNavProps) =>
           </Button>
         </nav>
       </aside>
-    </div>
+      
+      {/* Desktop sidebar - visible on medium screens and up */}
+      <aside className="hidden md:flex md:flex-col w-64 h-full bg-white border-r border-gray-200 fixed">
+        <div className="p-4">
+          <span className="font-bold">RapidCare Health System</span>
+        </div>
+        
+        <nav className="flex-1 py-4">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.path}
+              className={cn(
+                "flex items-center space-x-2 px-4 py-2 hover:bg-gray-100",
+                location.pathname === item.path ? "bg-gray-100 font-medium" : ""
+              )}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+        
+        <div className="p-4 border-t border-gray-200">
+          <Button 
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={() => {
+              authService.logout();
+            }}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        </div>
+      </aside>
+    </>
   );
 };
 
