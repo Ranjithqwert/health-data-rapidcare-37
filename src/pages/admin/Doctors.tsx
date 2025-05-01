@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { supabase, generatePassword } from "@/integrations/supabase/client";
@@ -80,12 +79,14 @@ const Doctors: React.FC = () => {
         return;
       }
       
+      console.log("Fetched doctors data:", data);
+      
       // Transform the data to match our Doctor model
       const transformedDoctors: Doctor[] = data.map(doc => ({
         doctorId: doc.id,
         name: doc.name,
         mobileNumber: doc.mobile_number,
-        email: doc.email,
+        email: doc.email, // This is the email property
         dateOfBirth: doc.dob,
         hospital: doc.hospital_id, // This would need to be replaced with the actual hospital name
         speciality: doc.speciality,
@@ -163,6 +164,8 @@ const Doctors: React.FC = () => {
   const sendWelcomeEmail = async (email: string, name: string, password: string) => {
     try {
       setSendingEmail(true);
+      console.log("Sending welcome email to:", email);
+      
       const { data, error } = await supabase.functions.invoke('send-welcome-email', {
         body: {
           email,
@@ -172,19 +175,27 @@ const Doctors: React.FC = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error invoking function:", error);
+        throw error;
+      }
 
+      console.log("Email function response:", data);
+      
       toast({
         title: "Email Sent",
         description: "Welcome email with credentials has been sent",
       });
+      
+      return true;
     } catch (error) {
       console.error("Error sending welcome email:", error);
       toast({
         title: "Error",
-        description: "Failed to send welcome email",
+        description: "Failed to send welcome email: " + (error as Error).message,
         variant: "destructive",
       });
+      return false;
     } finally {
       setSendingEmail(false);
     }
@@ -205,6 +216,7 @@ const Doctors: React.FC = () => {
       if (dialogMode === 'create') {
         // Generate a password for the new doctor
         const password = generatePassword();
+        console.log("Generated password:", password);
         
         // Create new doctor in Supabase
         const { data, error } = await supabase
@@ -228,11 +240,19 @@ const Doctors: React.FC = () => {
           }])
           .select();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Error creating doctor:", error);
+          throw error;
+        }
+        
+        console.log("Created doctor:", data);
         
         // Send welcome email with credentials
         if (data && data.length > 0) {
-          await sendWelcomeEmail(email, name, password);
+          const emailSent = await sendWelcomeEmail(email, name, password);
+          if (!emailSent) {
+            console.warn("Email not sent, but doctor was created");
+          }
         }
         
         // Refresh doctors list
@@ -276,7 +296,7 @@ const Doctors: React.FC = () => {
       console.error("Error saving doctor:", error);
       toast({
         title: "Error",
-        description: "Failed to save doctor",
+        description: "Failed to save doctor: " + (error as Error).message,
         variant: "destructive",
       });
     }

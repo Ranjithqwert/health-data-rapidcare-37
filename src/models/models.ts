@@ -10,6 +10,7 @@ export interface Doctor {
   doctorId: string;
   name: string;
   mobileNumber: string;
+  email?: string; // Added email property to fix the build error
   dateOfBirth: string;
   hospital: string;
   speciality: string;

@@ -1,178 +1,130 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth.service";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { 
   Home, 
   User, 
-  Calendar, 
+  Users, 
+  Hospital, 
   FileText, 
-  Bed, 
   LogOut,
-  Settings,
-  Users,
-  Hospital,
-  HeartPulse,
-  BarChart
+  Menu,
+  X,
+  Key  // Added Key icon for Change Password
 } from "lucide-react";
 
 interface SideNavProps {
   isMobileSidebarOpen: boolean;
-  setMobileSidebarOpen: (isOpen: boolean) => void;
+  setMobileSidebarOpen: (open: boolean) => void;
 }
 
-const SideNav: React.FC<SideNavProps> = ({ isMobileSidebarOpen, setMobileSidebarOpen }) => {
+const SideNav = ({ isMobileSidebarOpen, setMobileSidebarOpen }: SideNavProps) => {
   const location = useLocation();
-  const userType = authService.getUserType();
-  
-  const closeMobileSidebar = () => {
-    setMobileSidebarOpen(false);
-  };
-  
-  const menuClass = cn(
-    "fixed top-0 bottom-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transition-transform",
-    isMobileSidebarOpen ? "transform-none" : "-translate-x-full lg:translate-x-0"
-  );
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const linkClass = "flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100";
-  const activeLinkClass = "flex items-center p-2 text-white bg-rapidcare-primary rounded-lg";
-  
-  const getLinkClass = (path: string) => {
-    return location.pathname === path ? activeLinkClass : linkClass;
-  };
-  
-  const renderAdminMenu = () => (
-    <>
-      <li>
-        <Link to="/admin/dashboard" className={getLinkClass("/admin/dashboard")} onClick={closeMobileSidebar}>
-          <BarChart className="w-5 h-5 mr-2" />
-          <span>Dashboard</span>
-        </Link>
-      </li>
-      <li>
-        <Link to="/admin/users" className={getLinkClass("/admin/users")} onClick={closeMobileSidebar}>
-          <Users className="w-5 h-5 mr-2" />
-          <span>Users</span>
-        </Link>
-      </li>
-      <li>
-        <Link to="/admin/doctors" className={getLinkClass("/admin/doctors")} onClick={closeMobileSidebar}>
-          <HeartPulse className="w-5 h-5 mr-2" />
-          <span>Doctors</span>
-        </Link>
-      </li>
-      <li>
-        <Link to="/admin/hospitals" className={getLinkClass("/admin/hospitals")} onClick={closeMobileSidebar}>
-          <Hospital className="w-5 h-5 mr-2" />
-          <span>Hospitals</span>
-        </Link>
-      </li>
-    </>
-  );
-  
-  const renderDoctorMenu = () => (
-    <>
-      <li>
-        <Link to="/doctor/home" className={getLinkClass("/doctor/home")} onClick={closeMobileSidebar}>
-          <Home className="w-5 h-5 mr-2" />
-          <span>Home</span>
-        </Link>
-      </li>
-      <li>
-        <Link to="/doctor/consultations" className={getLinkClass("/doctor/consultations")} onClick={closeMobileSidebar}>
-          <Calendar className="w-5 h-5 mr-2" />
-          <span>Consultations</span>
-        </Link>
-      </li>
-      <li>
-        <Link to="/doctor/user-details" className={getLinkClass("/doctor/user-details")} onClick={closeMobileSidebar}>
-          <User className="w-5 h-5 mr-2" />
-          <span>User Details</span>
-        </Link>
-      </li>
-    </>
-  );
-  
-  const renderHospitalMenu = () => (
-    <>
-      <li>
-        <Link to="/hospital/home" className={getLinkClass("/hospital/home")} onClick={closeMobileSidebar}>
-          <Home className="w-5 h-5 mr-2" />
-          <span>Home</span>
-        </Link>
-      </li>
-      <li>
-        <Link to="/hospital/admissions" className={getLinkClass("/hospital/admissions")} onClick={closeMobileSidebar}>
-          <Bed className="w-5 h-5 mr-2" />
-          <span>Admissions</span>
-        </Link>
-      </li>
-      <li>
-        <Link to="/hospital/user-details" className={getLinkClass("/hospital/user-details")} onClick={closeMobileSidebar}>
-          <User className="w-5 h-5 mr-2" />
-          <span>User Details</span>
-        </Link>
-      </li>
-    </>
-  );
-  
-  const renderUserMenu = () => (
-    <>
-      <li>
-        <Link to="/user/home" className={getLinkClass("/user/home")} onClick={closeMobileSidebar}>
-          <Home className="w-5 h-5 mr-2" />
-          <span>Home</span>
-        </Link>
-      </li>
-      <li>
-        <Link to="/user/consultations" className={getLinkClass("/user/consultations")} onClick={closeMobileSidebar}>
-          <Calendar className="w-5 h-5 mr-2" />
-          <span>Consultations</span>
-        </Link>
-      </li>
-      <li>
-        <Link to="/user/admissions" className={getLinkClass("/user/admissions")} onClick={closeMobileSidebar}>
-          <Bed className="w-5 h-5 mr-2" />
-          <span>Admissions</span>
-        </Link>
-      </li>
-    </>
-  );
-  
+  // Get the current user type
+  const userType = authService.getUserType();
+
+  // Define navigation items based on user type
+  const navItems: { label: string; path: string; icon: React.ReactNode }[] = [];
+
+  if (userType === 'admin') {
+    navItems.push({ label: 'Dashboard', path: '/admin/dashboard', icon: <Home className="h-5 w-5" /> });
+    navItems.push({ label: 'Doctors', path: '/admin/doctors', icon: <Users className="h-5 w-5" /> });
+    navItems.push({ label: 'Hospitals', path: '/admin/hospitals', icon: <Hospital className="h-5 w-5" /> });
+    navItems.push({ label: 'Users', path: '/admin/users', icon: <User className="h-5 w-5" /> });
+  } else if (userType === 'doctor') {
+    navItems.push({ label: 'Home', path: '/doctor/home', icon: <Home className="h-5 w-5" /> });
+    navItems.push({ label: 'Consultations', path: '/doctor/consultations', icon: <FileText className="h-5 w-5" /> });
+    navItems.push({ label: 'User Details', path: '/doctor/user-details', icon: <User className="h-5 w-5" /> });
+  } else if (userType === 'hospital') {
+    navItems.push({ label: 'Home', path: '/hospital/home', icon: <Home className="h-5 w-5" /> });
+    navItems.push({ label: 'Admissions', path: '/hospital/admissions', icon: <FileText className="h-5 w-5" /> });
+    navItems.push({ label: 'User Details', path: '/hospital/user-details', icon: <User className="h-5 w-5" /> });
+  } else if (userType === 'user') {
+    navItems.push({ label: 'Home', path: '/user/home', icon: <Home className="h-5 w-5" /> });
+    navItems.push({ label: 'Consultations', path: '/user/consultations', icon: <FileText className="h-5 w-5" /> });
+    navItems.push({ label: 'Admissions', path: '/user/admissions', icon: <FileText className="h-5 w-5" /> });
+  }
+
+  // Add Change Password link to all user types
+  if (userType === 'admin') {
+    navItems.push({ 
+      label: 'Change Password', 
+      path: '/admin/change-password', 
+      icon: <Key className="h-5 w-5" /> 
+    });
+  } else if (userType === 'doctor') {
+    navItems.push({ 
+      label: 'Change Password', 
+      path: '/doctor/change-password', 
+      icon: <Key className="h-5 w-5" /> 
+    });
+  } else if (userType === 'hospital') {
+    navItems.push({ 
+      label: 'Change Password', 
+      path: '/hospital/change-password', 
+      icon: <Key className="h-5 w-5" /> 
+    });
+  } else if (userType === 'user') {
+    navItems.push({ 
+      label: 'Change Password', 
+      path: '/user/change-password', 
+      icon: <Key className="h-5 w-5" /> 
+    });
+  }
+
   return (
-    <aside className={menuClass}>
-      <div className="overflow-y-auto py-5 px-3 h-full bg-white">
-        <div className="flex items-center justify-center mb-5">
-          <h1 className="text-2xl font-bold text-rapidcare-primary">RapidCare</h1>
+    <div className="md:hidden">
+      <Button variant="outline" size="icon" onClick={() => setMobileSidebarOpen(true)}>
+        <Menu className="h-5 w-5" />
+      </Button>
+      
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-50 h-full w-64 bg-white border-r border-gray-200 transition-transform transform-translate-x-0",
+          isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
+        <div className="flex items-center justify-between p-4">
+          <span className="font-bold">RapidCare Health System</span>
+          <Button variant="outline" size="icon" onClick={() => setMobileSidebarOpen(false)}>
+            <X className="h-5 w-5" />
+          </Button>
         </div>
-        <ul className="space-y-2">
-          {userType === 'admin' && renderAdminMenu()}
-          {userType === 'doctor' && renderDoctorMenu()}
-          {userType === 'hospital' && renderHospitalMenu()}
-          {userType === 'user' && renderUserMenu()}
-          
-          <li className="border-t border-gray-200 pt-2 mt-2">
-            <Link to="/change-password" className={getLinkClass("/change-password")} onClick={closeMobileSidebar}>
-              <Settings className="w-5 h-5 mr-2" />
-              <span>Change Password</span>
-            </Link>
-          </li>
-          <li>
-            <button 
-              onClick={() => {
-                authService.logout();
-                closeMobileSidebar();
-              }}
-              className={linkClass}
+        
+        <nav className="py-4">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.path}
+              className={cn(
+                "flex items-center space-x-2 px-4 py-2 hover:bg-gray-100",
+                location.pathname === item.path ? "bg-gray-100 font-medium" : ""
+              )}
+              onClick={() => setMobileSidebarOpen(false)}
             >
-              <LogOut className="w-5 h-5 mr-2" />
-              <span>Logout</span>
-            </button>
-          </li>
-        </ul>
-      </div>
-    </aside>
+              {item.icon}
+              <span>{item.label}</span>
+            </Link>
+          ))}
+          
+          <Button 
+            variant="ghost"
+            className="w-full justify-start pl-4 mt-2"
+            onClick={() => {
+              authService.logout();
+              setMobileSidebarOpen(false);
+            }}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        </nav>
+      </aside>
+    </div>
   );
 };
 

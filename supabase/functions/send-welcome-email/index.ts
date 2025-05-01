@@ -22,6 +22,7 @@ serve(async (req) => {
     const { email, name, userType, password }: WelcomeEmailRequest = await req.json();
 
     if (!RESEND_API_KEY) {
+      console.error("RESEND_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "RESEND_API_KEY not configured" }),
         { 
@@ -30,6 +31,8 @@ serve(async (req) => {
         }
       );
     }
+
+    console.log(`Attempting to send email to ${email} for ${userType} ${name} with password ${password}`);
 
     // Send email with Resend API
     const response = await fetch("https://api.resend.com/emails", {
@@ -58,7 +61,7 @@ serve(async (req) => {
     console.log("Email sending result:", result);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Welcome email sent successfully" }),
+      JSON.stringify({ success: true, message: "Welcome email sent successfully", result }),
       { 
         status: 200, 
         headers: { ...corsHeaders, "Content-Type": "application/json" }
