@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { authService } from "@/services/auth.service";
 import SideNav from "@/components/common/SideNav";
@@ -11,6 +11,7 @@ interface AuthenticatedLayoutProps {
 
 const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children, requiredUserType }) => {
   const navigate = useNavigate();
+  const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   
   const isLoggedIn = authService.isLoggedIn();
   const userType = authService.getUserType();
@@ -28,7 +29,10 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children, req
   
   return (
     <div className="flex">
-      <SideNav userType={requiredUserType} />
+      <SideNav 
+        isMobileSidebarOpen={isMobileSidebarOpen}
+        setMobileSidebarOpen={setMobileSidebarOpen}
+      />
       <main className="page-container flex-1">
         {children}
       </main>
