@@ -6,17 +6,46 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Consultation } from "@/models/models";
 import { toast } from "@/components/ui/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Calendar as CalendarIcon, Clock } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface Consultation {
+  id: string;
+  patient_id: string;
+  doctor_id: string;
+  consultation_date: string;
+  consultation_time: string;
+  place: string;
+  place_id: string;
+  prescription?: string;
+  report_link?: string;
+  patient_name?: string;
+}
 
 const Consultations: React.FC = () => {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openNewConsultationDialog, setOpenNewConsultationDialog] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
   const [prescription, setPrescription] = useState("");
+  const [prescriptionFile, setPrescriptionFile] = useState<File | null>(null);
+  
+  // New consultation form state
+  const [patientId, setPatientId] = useState("");
+  const [patientName, setPatientName] = useState("");
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [time, setTime] = useState("09:00");
+  const [place, setPlace] = useState<"Hospital" | "Clinic">("Hospital");
+  const [placeId, setPlaceId] = useState("");
 
   const doctorId = authService.getUserId();
 
@@ -28,53 +57,42 @@ const Consultations: React.FC = () => {
     try {
       setLoading(true);
       
-      // For demonstration purposes, we'll create mock data
-      const mockConsultations: Consultation[] = [
-        {
-          id: "1",
-          patientId: "patient1",
-          patientName: "John Doe",
-          doctorId: doctorId || "",
-          doctorName: authService.getUserName() || "Doctor",
-          date: "2023-05-15",
-          time: "10:00 AM",
-          place: "Hospital",
-          placeId: "hospital1",
-        },
-        {
-          id: "2",
-          patientId: "patient2",
-          patientName: "Jane Smith",
-          doctorId: doctorId || "",
-          doctorName: authService.getUserName() || "Doctor",
-          date: "2023-05-16",
-          time: "11:30 AM",
-          place: "Clinic",
-          placeId: "clinic1",
-          prescription: "Rest for 3 days and take prescribed medicine"
-        }
-      ];
-      
-      setConsultations(mockConsultations);
-      
-      // In a real implementation, we would fetch from Supabase
-      /*
-      const { data, error } = await supabase
-        .from('consultations')
-        .select('*')
-        .eq('doctorId', doctorId);
-        
-      if (error) {
+      if (!doctorId) {
         toast({
-          title: "Error fetching consultations",
-          description: error.message,
+          title: "Error",
+          description: "Doctor ID not found. Please log in again.",
           variant: "destructive",
         });
         return;
       }
       
-      setConsultations(data || []);
-      */
+      // Fetch consultations from Supabase
+      const { data, error } = await supabase
+        .from('consultations')
+        .select('*')
+        .eq('doctor_id', doctorId);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Get patient names
+      const enhancedConsultations = await Promise.all(
+        (data || []).map(async (consultation) => {
+          const { data: patientData } = await supabase
+            .from('patients')
+            .select('name')
+            .eq('id', consultation.patient_id)
+            .maybeSingle();
+            
+          return {
+            ...consultation,
+            patient_name: patientData?.name || 'Unknown Patient'
+          };
+        })
+      );
+      
+      setConsultations(enhancedConsultations);
     } catch (error) {
       console.error("Error fetching consultations:", error);
       toast({
@@ -90,29 +108,66 @@ const Consultations: React.FC = () => {
   const handleAddPrescription = (consultation: Consultation) => {
     setSelectedConsultation(consultation);
     setPrescription(consultation.prescription || "");
+    setPrescriptionFile(null);
     setOpenDialog(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setPrescriptionFile(files[0]);
+    }
   };
 
   const savePrescription = async () => {
     if (!selectedConsultation) return;
     
     try {
-      // In a real implementation, we would update the database
-      // For now, we'll just update our local state
-      const updatedConsultations = consultations.map(c => 
-        c.id === selectedConsultation.id ? { ...c, prescription } : c
-      );
+      let reportLink = selectedConsultation.report_link;
       
-      setConsultations(updatedConsultations);
+      // If there's a file, upload it to Supabase Storage
+      if (prescriptionFile) {
+        const fileExt = prescriptionFile.name.split('.').pop();
+        const fileName = `${Date.now()}-prescription.${fileExt}`;
+        
+        // Create bucket if it doesn't exist (you'll need to add RLS policies for this to work)
+        const { data: bucketExists } = await supabase.storage.getBucket('prescriptions');
+        if (!bucketExists) {
+          await supabase.storage.createBucket('prescriptions', {
+            public: false,
+            fileSizeLimit: 10485760 // 10MB
+          });
+        }
+        
+        // Upload the file
+        const { error: uploadError, data } = await supabase.storage
+          .from('prescriptions')
+          .upload(`${selectedConsultation.id}/${fileName}`, prescriptionFile);
+          
+        if (uploadError) {
+          throw uploadError;
+        }
+        
+        // Get the public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('prescriptions')
+          .getPublicUrl(`${selectedConsultation.id}/${fileName}`);
+          
+        reportLink = publicUrl;
+      }
       
-      /* 
+      // Update the consultation record
       const { error } = await supabase
         .from('consultations')
-        .update({ prescription })
+        .update({ 
+          prescription: prescription,
+          report_link: reportLink
+        })
         .eq('id', selectedConsultation.id);
         
-      if (error) throw error;
-      */
+      if (error) {
+        throw error;
+      }
       
       toast({
         title: "Success",
@@ -120,6 +175,7 @@ const Consultations: React.FC = () => {
       });
       
       setOpenDialog(false);
+      fetchConsultations();
     } catch (error) {
       console.error("Error saving prescription:", error);
       toast({
@@ -130,10 +186,112 @@ const Consultations: React.FC = () => {
     }
   };
 
+  const handleNewConsultation = () => {
+    setPatientId("");
+    setPatientName("");
+    setDate(new Date());
+    setTime("09:00");
+    setPlace("Hospital");
+    setPlaceId("");
+    setOpenNewConsultationDialog(true);
+  };
+
+  const handleLookupPatient = async () => {
+    if (!patientId) {
+      toast({
+        title: "Error",
+        description: "Please enter a patient ID",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('patients')
+        .select('name')
+        .eq('id', patientId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        toast({
+          title: "Error",
+          description: "Patient not found",
+          variant: "destructive"
+        });
+        setPatientName("");
+        return;
+      }
+
+      setPatientName(data.name);
+      toast({
+        title: "Success",
+        description: "Patient found",
+      });
+    } catch (error) {
+      console.error("Error looking up patient:", error);
+      toast({
+        title: "Error",
+        description: "Failed to look up patient",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const createConsultation = async () => {
+    if (!patientId || !date || !time || !place) {
+      toast({
+        title: "Error",
+        description: "Please fill all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const formattedDate = format(date, "yyyy-MM-dd");
+      
+      // Create the consultation record
+      const { data, error } = await supabase
+        .from('consultations')
+        .insert({
+          patient_id: patientId,
+          doctor_id: doctorId,
+          consultation_date: formattedDate,
+          consultation_time: time,
+          place: place,
+          place_id: placeId || doctorId // Fallback to doctor ID if no specific place is provided
+        })
+        .select();
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Consultation created successfully",
+      });
+      
+      setOpenNewConsultationDialog(false);
+      fetchConsultations();
+    } catch (error) {
+      console.error("Error creating consultation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create consultation",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <AuthenticatedLayout requiredUserType="doctor">
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-6">Consultations</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Consultations</h1>
+          <Button onClick={handleNewConsultation}>New Consultation</Button>
+        </div>
         
         <Card>
           <CardHeader>
@@ -159,11 +317,15 @@ const Consultations: React.FC = () => {
                 <TableBody>
                   {consultations.map((consultation) => (
                     <TableRow key={consultation.id}>
-                      <TableCell>{consultation.patientName}</TableCell>
-                      <TableCell>{consultation.date}</TableCell>
-                      <TableCell>{consultation.time}</TableCell>
+                      <TableCell>{consultation.patient_name}</TableCell>
+                      <TableCell>{consultation.consultation_date}</TableCell>
+                      <TableCell>{consultation.consultation_time}</TableCell>
                       <TableCell>{consultation.place}</TableCell>
-                      <TableCell>{consultation.prescription ? "Added" : "Not added"}</TableCell>
+                      <TableCell>
+                        {consultation.prescription ? (
+                          consultation.report_link ? "File uploaded" : "Text added"
+                        ) : "Not added"}
+                      </TableCell>
                       <TableCell>
                         <Button 
                           variant="outline" 
@@ -180,6 +342,7 @@ const Consultations: React.FC = () => {
           </CardContent>
         </Card>
         
+        {/* Prescription Dialog */}
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>
           <DialogContent>
             <DialogHeader>
@@ -189,22 +352,143 @@ const Consultations: React.FC = () => {
             </DialogHeader>
             
             <div className="py-4">
-              <h3 className="font-medium mb-2">Patient: {selectedConsultation?.patientName}</h3>
+              <h3 className="font-medium mb-2">Patient: {selectedConsultation?.patient_name}</h3>
               <h4 className="text-sm text-muted-foreground mb-4">
-                Date: {selectedConsultation?.date} at {selectedConsultation?.time}
+                Date: {selectedConsultation?.consultation_date} at {selectedConsultation?.consultation_time}
               </h4>
               
-              <Textarea
-                value={prescription}
-                onChange={(e) => setPrescription(e.target.value)}
-                placeholder="Enter prescription details..."
-                className="min-h-[150px]"
-              />
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="prescription">Prescription Notes</Label>
+                  <Textarea
+                    id="prescription"
+                    value={prescription}
+                    onChange={(e) => setPrescription(e.target.value)}
+                    placeholder="Enter prescription details..."
+                    className="min-h-[150px]"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="prescription-file">Upload Prescription File</Label>
+                  <Input 
+                    id="prescription-file" 
+                    type="file" 
+                    onChange={handleFileChange}
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Supported formats: PDF, DOC, DOCX, JPG, JPEG, PNG
+                  </p>
+                </div>
+              </div>
             </div>
             
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpenDialog(false)}>Cancel</Button>
               <Button onClick={savePrescription}>Save Prescription</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* New Consultation Dialog */}
+        <Dialog open={openNewConsultationDialog} onOpenChange={setOpenNewConsultationDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>New Consultation</DialogTitle>
+            </DialogHeader>
+            
+            <div className="py-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <Label htmlFor="patientId">Patient ID</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="patientId"
+                      value={patientId}
+                      onChange={(e) => setPatientId(e.target.value)}
+                      placeholder="Enter patient ID"
+                      className="flex-1"
+                    />
+                    <Button variant="outline" onClick={handleLookupPatient} type="button">
+                      Look up
+                    </Button>
+                  </div>
+                  {patientName && (
+                    <p className="text-sm text-muted-foreground mt-1">Patient: {patientName}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <Label htmlFor="date">Consultation Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date ? format(date, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={setDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                
+                <div>
+                  <Label htmlFor="time">Time</Label>
+                  <div className="flex items-center border rounded-md">
+                    <Input
+                      id="time"
+                      type="time"
+                      value={time}
+                      onChange={(e) => setTime(e.target.value)}
+                      className="border-0"
+                    />
+                    <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label>Place Type</Label>
+                  <Select 
+                    value={place} 
+                    onValueChange={(value) => setPlace(value as "Hospital" | "Clinic")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select place" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Hospital">Hospital</SelectItem>
+                      <SelectItem value="Clinic">Clinic</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="placeId">Place ID (Optional)</Label>
+                  <Input
+                    id="placeId"
+                    value={placeId}
+                    onChange={(e) => setPlaceId(e.target.value)}
+                    placeholder="Enter hospital/clinic ID"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpenNewConsultationDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={createConsultation}>Create Consultation</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

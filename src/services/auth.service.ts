@@ -76,12 +76,11 @@ class AuthService {
         }
         
         // In a real implementation, check the password against a hashed version in the database
-        // This is simplified for demonstration purposes
         try {
           // Using maybeSingle() instead of single() to avoid errors with missing data
           const { data, error } = await supabase
             .from(tableName)
-            .select('id, name')
+            .select('id, name, email, mobile_number')
             .eq('id', request.userId)
             .maybeSingle();
             
@@ -101,6 +100,8 @@ class AuthService {
           // Correctly extract values from the data object with proper type checking
           let userId = '';
           let userName = '';
+          let userEmail = '';
+          let userMobile = '';
           
           // Ensuring data is not null before accessing its properties
           if (data) {
@@ -113,12 +114,24 @@ class AuthService {
             if ('name' in data && data.name !== null && typeof data.name === 'string') {
               userName = data.name;
             }
+            
+            // Check if email exists
+            if ('email' in data && data.email !== null && typeof data.email === 'string') {
+              userEmail = data.email;
+            }
+            
+            // Check if mobile_number exists
+            if ('mobile_number' in data && data.mobile_number !== null && typeof data.mobile_number === 'string') {
+              userMobile = data.mobile_number;
+            }
           }
           
           localStorage.setItem('token', token);
           localStorage.setItem('userId', userId);
           localStorage.setItem('userType', request.userType);
           localStorage.setItem('userName', userName);
+          localStorage.setItem('userEmail', userEmail || '');
+          localStorage.setItem('userMobile', userMobile || '');
           
           return {
             success: true,
@@ -143,6 +156,8 @@ class AuthService {
     localStorage.removeItem('userId');
     localStorage.removeItem('userType');
     localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userMobile');
     
     // Redirect to home page
     window.location.href = '/';
@@ -406,6 +421,42 @@ class AuthService {
       confirmPassword,
       userType: userType as 'doctor' | 'hospital' | 'user'
     });
+  }
+
+  // Get current user details
+  async getCurrentUserDetails(): Promise<any> {
+    const userId = this.getUserId();
+    const userType = this.getUserType();
+    
+    if (!userId || !userType) {
+      return null;
+    }
+    
+    let tableName;
+    switch (userType) {
+      case 'doctor': tableName = 'doctors'; break;
+      case 'hospital': tableName = 'hospitals'; break;
+      case 'user': tableName = 'patients'; break;
+      default: return null;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (error) {
+        console.error(`Error fetching ${userType} details:`, error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error(`Error fetching ${userType} details:`, error);
+      return null;
+    }
   }
 }
 
