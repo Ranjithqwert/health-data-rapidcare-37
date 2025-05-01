@@ -13,6 +13,8 @@ import {
   OTPVerificationRequest,
   ResetPasswordRequest 
 } from "@/models/models";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 // API URL configuration - modify this to point to your backend API
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -510,32 +512,173 @@ class ApiService {
     monthlyUserCreation: { [key: string]: number };
   } | null> {
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
-        headers: {
-          'Authorization': `Bearer ${this.getToken()}`
+      // Get user count
+      const { count: userCount, error: userError } = await supabase
+        .from('patients')
+        .select('*', { count: 'exact', head: true });
+
+      // Get doctor count
+      const { count: doctorCount, error: doctorError } = await supabase
+        .from('doctors')
+        .select('*', { count: 'exact', head: true });
+
+      // Get hospital count
+      const { count: hospitalCount, error: hospitalError } = await supabase
+        .from('hospitals')
+        .select('*', { count: 'exact', head: true });
+
+      if (userError || doctorError || hospitalError) {
+        console.error("Error fetching counts:", userError || doctorError || hospitalError);
+        return null;
+      }
+
+      // Get users by disease
+      const { data: patientsData, error: diseaseError } = await supabase
+        .from('patients')
+        .select('sugar, bp, cardiac, kidney, liver, lungs');
+
+      if (diseaseError) {
+        console.error("Error fetching disease data:", diseaseError);
+        return null;
+      }
+
+      const usersByDisease: { [key: string]: number } = {
+        Sugar: 0,
+        BP: 0,
+        Cardiac: 0,
+        Kidney: 0,
+        Liver: 0,
+        Lungs: 0
+      };
+
+      patientsData?.forEach(patient => {
+        if (patient.sugar) usersByDisease.Sugar++;
+        if (patient.bp) usersByDisease.BP++;
+        if (patient.cardiac) usersByDisease.Cardiac++;
+        if (patient.kidney) usersByDisease.Kidney++;
+        if (patient.liver) usersByDisease.Liver++;
+        if (patient.lungs) usersByDisease.Lungs++;
+      });
+
+      // Get users by addiction
+      const usersByAddiction: { [key: string]: number } = {
+        Smoke: 0,
+        Alcohol: 0,
+        None: 0
+      };
+
+      patientsData?.forEach(patient => {
+        if (patient.smoke && patient.alcohol) {
+          usersByAddiction.Smoke++;
+          usersByAddiction.Alcohol++;
+        } else if (patient.smoke) {
+          usersByAddiction.Smoke++;
+        } else if (patient.alcohol) {
+          usersByAddiction.Alcohol++;
+        } else {
+          usersByAddiction.None++;
         }
       });
-      
-      if (!response.ok) return null;
-      return await response.json();
+
+      // Get monthly user creation
+      const { data: patientsByDate, error: monthlyError } = await supabase
+        .from('patients')
+        .select('created_at');
+
+      if (monthlyError) {
+        console.error("Error fetching monthly data:", monthlyError);
+        return null;
+      }
+
+      const monthlyUserCreation: { [key: string]: number } = {};
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      patientsByDate?.forEach(patient => {
+        const date = new Date(patient.created_at);
+        const monthYear = `${months[date.getMonth()]} ${date.getFullYear()}`;
+        
+        if (!monthlyUserCreation[monthYear]) {
+          monthlyUserCreation[monthYear] = 0;
+        }
+        monthlyUserCreation[monthYear]++;
+      });
+
+      return {
+        userCount: userCount || 0,
+        doctorCount: doctorCount || 0,
+        hospitalCount: hospitalCount || 0,
+        usersByDisease,
+        usersByAddiction,
+        monthlyUserCreation
+      };
     } catch (error) {
       console.error("Get dashboard stats error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch dashboard statistics.",
+        variant: "destructive"
+      });
       return null;
     }
   }
 
   async getTargetAnalysis(target: string, filterLevel: string): Promise<{ name: string; percentage: number }[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/analysis?target=${target}&filterLevel=${filterLevel}`, {
-        headers: {
-          'Authorization': `Bearer ${this.getToken()}`
+      // Get all patients with location data
+      const { data: patients, error } = await supabase
+        .from('patients')
+        .select(`
+          ${target.toLowerCase()}, 
+          ${filterLevel}, 
+          id
+        `);
+
+      if (error) {
+        console.error("Error fetching target analysis:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch target analysis data.",
+          variant: "destructive"
+        });
+        return [];
+      }
+
+      // Group by location and calculate percentages
+      const locationStats: { [key: string]: { total: number; affected: number } } = {};
+      
+      patients?.forEach(patient => {
+        const locationValue = patient[filterLevel as keyof typeof patient] as string;
+        
+        if (!locationValue) return; // Skip if location is not defined
+        
+        if (!locationStats[locationValue]) {
+          locationStats[locationValue] = { total: 0, affected: 0 };
+        }
+        
+        locationStats[locationValue].total++;
+        
+        // Check if patient has the target condition
+        const hasCondition = patient[target.toLowerCase() as keyof typeof patient];
+        if (hasCondition) {
+          locationStats[locationValue].affected++;
         }
       });
       
-      if (!response.ok) return [];
-      return await response.json();
+      // Calculate percentages and return sorted by percentage
+      return Object.entries(locationStats)
+        .map(([name, stats]) => ({
+          name,
+          percentage: (stats.affected / stats.total) * 100
+        }))
+        .sort((a, b) => b.percentage - a.percentage);
+      
     } catch (error) {
       console.error("Get target analysis error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch target analysis data.",
+        variant: "destructive"
+      });
       return [];
     }
   }

@@ -4,6 +4,8 @@ import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { Card } from "@/components/ui/card";
 import { BarChart, LineChart, PieChart } from "@/components/ui/charts";
 import { apiService } from "@/services/api.service";
+import { toast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Chart type for disease tracking by location
 interface AnalysisResult {
@@ -17,6 +19,7 @@ const Dashboard: React.FC = () => {
   const [targetAnalysis, setTargetAnalysis] = useState<AnalysisResult[]>([]);
   const [target, setTarget] = useState<string>("Sugar");
   const [filterLevel, setFilterLevel] = useState<string>("village");
+  const [analysisLoading, setAnalysisLoading] = useState(false);
 
   // Fetch dashboard statistics
   useEffect(() => {
@@ -24,9 +27,15 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       try {
         const dashboardStats = await apiService.getDashboardStats();
+        console.log("Dashboard stats:", dashboardStats);
         setStats(dashboardStats);
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard statistics.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
@@ -38,11 +47,19 @@ const Dashboard: React.FC = () => {
   // Fetch target analysis data
   useEffect(() => {
     const fetchTargetAnalysis = async () => {
+      setAnalysisLoading(true);
       try {
         const data = await apiService.getTargetAnalysis(target, filterLevel);
         setTargetAnalysis(data);
       } catch (error) {
         console.error("Error fetching target analysis:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load target analysis.",
+          variant: "destructive"
+        });
+      } finally {
+        setAnalysisLoading(false);
       }
     };
 
@@ -91,30 +108,42 @@ const Dashboard: React.FC = () => {
         
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="card-stats">
+          <Card className="card-stats p-4">
             <div className="flex flex-col">
               <span className="text-sm text-gray-500">Total Users</span>
-              <span className="text-2xl font-bold">
-                {loading ? "Loading..." : stats?.userCount || 0}
-              </span>
+              {loading ? (
+                <Skeleton className="w-20 h-8 mt-1" />
+              ) : (
+                <span className="text-2xl font-bold">
+                  {stats?.userCount || 0}
+                </span>
+              )}
             </div>
           </Card>
           
-          <Card className="card-stats">
+          <Card className="card-stats p-4">
             <div className="flex flex-col">
               <span className="text-sm text-gray-500">Total Doctors</span>
-              <span className="text-2xl font-bold">
-                {loading ? "Loading..." : stats?.doctorCount || 0}
-              </span>
+              {loading ? (
+                <Skeleton className="w-20 h-8 mt-1" />
+              ) : (
+                <span className="text-2xl font-bold">
+                  {stats?.doctorCount || 0}
+                </span>
+              )}
             </div>
           </Card>
           
-          <Card className="card-stats">
+          <Card className="card-stats p-4">
             <div className="flex flex-col">
               <span className="text-sm text-gray-500">Total Hospitals</span>
-              <span className="text-2xl font-bold">
-                {loading ? "Loading..." : stats?.hospitalCount || 0}
-              </span>
+              {loading ? (
+                <Skeleton className="w-20 h-8 mt-1" />
+              ) : (
+                <span className="text-2xl font-bold">
+                  {stats?.hospitalCount || 0}
+                </span>
+              )}
             </div>
           </Card>
         </div>
@@ -125,13 +154,19 @@ const Dashboard: React.FC = () => {
           <Card className="p-6">
             <h2 className="text-lg font-medium mb-4">Monthly User Registration</h2>
             <div className="h-80">
-              <LineChart 
-                data={prepareMonthlyUserCreationData()} 
-                index="name"
-                categories={["value"]}
-                colors={["#1976D2"]}
-                valueFormatter={(value) => `${value} users`}
-              />
+              {loading ? (
+                <div className="h-full w-full flex items-center justify-center">
+                  <p className="text-gray-500">Loading chart data...</p>
+                </div>
+              ) : (
+                <LineChart 
+                  data={prepareMonthlyUserCreationData()} 
+                  index="name"
+                  categories={["value"]}
+                  colors={["#1976D2"]}
+                  valueFormatter={(value) => `${value} users`}
+                />
+              )}
             </div>
           </Card>
           
@@ -139,13 +174,19 @@ const Dashboard: React.FC = () => {
           <Card className="p-6">
             <h2 className="text-lg font-medium mb-4">Health Conditions Distribution</h2>
             <div className="h-80">
-              <BarChart 
-                data={prepareDiseaseData()} 
-                index="name"
-                categories={["value"]}
-                colors={["#1976D2"]}
-                valueFormatter={(value) => `${value} users`}
-              />
+              {loading ? (
+                <div className="h-full w-full flex items-center justify-center">
+                  <p className="text-gray-500">Loading chart data...</p>
+                </div>
+              ) : (
+                <BarChart 
+                  data={prepareDiseaseData()} 
+                  index="name"
+                  categories={["value"]}
+                  colors={["#1976D2"]}
+                  valueFormatter={(value) => `${value} users`}
+                />
+              )}
             </div>
           </Card>
         </div>
@@ -155,13 +196,19 @@ const Dashboard: React.FC = () => {
           <Card className="p-6">
             <h2 className="text-lg font-medium mb-4">Lifestyle Distribution</h2>
             <div className="h-80">
-              <PieChart 
-                data={prepareAddictionData()} 
-                index="name"
-                categories={["value"]}
-                colors={["#4CAF50", "#FFC107", "#F44336"]}
-                valueFormatter={(value) => `${value} users`}
-              />
+              {loading ? (
+                <div className="h-full w-full flex items-center justify-center">
+                  <p className="text-gray-500">Loading chart data...</p>
+                </div>
+              ) : (
+                <PieChart 
+                  data={prepareAddictionData()} 
+                  index="name"
+                  categories={["value"]}
+                  colors={["#4CAF50", "#FFC107", "#F44336"]}
+                  valueFormatter={(value) => `${value} users`}
+                />
+              )}
             </div>
           </Card>
           
@@ -209,8 +256,13 @@ const Dashboard: React.FC = () => {
                 <button
                   className="w-full bg-rapidcare-primary text-white py-2 px-4 rounded-md hover:bg-rapidcare-secondary transition"
                   onClick={() => {
+                    setAnalysisLoading(true);
                     apiService.getTargetAnalysis(target, filterLevel).then(data => {
                       setTargetAnalysis(data);
+                      setAnalysisLoading(false);
+                    }).catch(err => {
+                      console.error("Analysis error:", err);
+                      setAnalysisLoading(false);
                     });
                   }}
                 >
@@ -236,7 +288,13 @@ const Dashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {targetAnalysis.length > 0 ? (
+                    {analysisLoading ? (
+                      <tr>
+                        <td colSpan={2} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                          Loading analysis data...
+                        </td>
+                      </tr>
+                    ) : targetAnalysis.length > 0 ? (
                       targetAnalysis.map((item, index) => (
                         <tr key={index}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
