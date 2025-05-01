@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, generatePassword } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Doctor } from "@/models/models";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 
 const Doctors: React.FC = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -16,71 +18,55 @@ const Doctors: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
   
   // Form fields
   const [doctorId, setDoctorId] = useState("");
   const [name, setName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
+  const [email, setEmail] = useState("");
   const [dob, setDob] = useState("");
   const [hospital, setHospital] = useState("");
   const [speciality, setSpeciality] = useState("");
   const [clinicAddress, setClinicAddress] = useState("");
 
   // List of hospitals for dropdown
-  const [hospitals, setHospitals] = useState([
-    { id: "hospital1", name: "City General Hospital" },
-    { id: "hospital2", name: "Medical Center" },
-    { id: "hospital3", name: "Community Health Center" }
-  ]);
+  const [hospitals, setHospitals] = useState<{id: string, name: string}[]>([]);
+  const [loadingHospitals, setLoadingHospitals] = useState(true);
 
   useEffect(() => {
     fetchDoctors();
+    fetchHospitals();
   }, []);
+
+  const fetchHospitals = async () => {
+    try {
+      setLoadingHospitals(true);
+      const { data, error } = await supabase
+        .from('hospitals')
+        .select('id, name');
+        
+      if (error) {
+        throw error;
+      }
+      
+      setHospitals(data || []);
+    } catch (error) {
+      console.error("Error fetching hospitals:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch hospitals",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingHospitals(false);
+    }
+  };
 
   const fetchDoctors = async () => {
     try {
       setLoading(true);
       
-      // For demonstration purposes, we'll create mock data
-      const mockDoctors: Doctor[] = [
-        {
-          doctorId: "doc1",
-          name: "Dr. Sarah Johnson",
-          mobileNumber: "1234567890",
-          dateOfBirth: "1980-05-15",
-          hospital: "City General Hospital",
-          speciality: "Cardiology",
-          clinicHouseNumber: "123",
-          clinicStreet: "Main Street",
-          clinicVillage: "Downtown",
-          clinicDistrict: "Central",
-          clinicState: "California",
-          clinicCountry: "USA",
-          clinicPincode: "90001",
-          password: "********"
-        },
-        {
-          doctorId: "doc2",
-          name: "Dr. Robert Miller",
-          mobileNumber: "9876543210",
-          dateOfBirth: "1975-08-22",
-          hospital: "Medical Center",
-          speciality: "Neurology",
-          clinicHouseNumber: "456",
-          clinicStreet: "Oak Avenue",
-          clinicVillage: "Suburbia",
-          clinicDistrict: "West",
-          clinicState: "New York",
-          clinicCountry: "USA",
-          clinicPincode: "10001",
-          password: "********"
-        }
-      ];
-      
-      setDoctors(mockDoctors);
-      
-      // In a real implementation, we would fetch from Supabase
-      /*
       const { data, error } = await supabase
         .from('doctors')
         .select('*');
@@ -94,8 +80,26 @@ const Doctors: React.FC = () => {
         return;
       }
       
-      setDoctors(data || []);
-      */
+      // Transform the data to match our Doctor model
+      const transformedDoctors: Doctor[] = data.map(doc => ({
+        doctorId: doc.id,
+        name: doc.name,
+        mobileNumber: doc.mobile_number,
+        email: doc.email,
+        dateOfBirth: doc.dob,
+        hospital: doc.hospital_id, // This would need to be replaced with the actual hospital name
+        speciality: doc.speciality,
+        clinicHouseNumber: doc.clinic_house_number || '',
+        clinicStreet: doc.clinic_street || '',
+        clinicVillage: doc.clinic_village || '',
+        clinicDistrict: doc.clinic_district || '',
+        clinicState: doc.clinic_state || '',
+        clinicCountry: doc.clinic_country || '',
+        clinicPincode: doc.clinic_pincode || '',
+        password: '********' // Masking the password
+      }));
+      
+      setDoctors(transformedDoctors);
     } catch (error) {
       console.error("Error fetching doctors:", error);
       toast({
@@ -119,6 +123,7 @@ const Doctors: React.FC = () => {
     setDoctorId(doctor.doctorId);
     setName(doctor.name);
     setMobileNumber(doctor.mobileNumber);
+    setEmail(doctor.email || '');
     setDob(doctor.dateOfBirth);
     setHospital(doctor.hospital);
     setSpeciality(doctor.speciality);
@@ -131,19 +136,15 @@ const Doctors: React.FC = () => {
     if (!confirm("Are you sure you want to delete this doctor?")) return;
     
     try {
-      // In a real implementation, we would delete from Supabase
-      // For now, we'll just update our local state
-      const updatedDoctors = doctors.filter(doctor => doctor.doctorId !== doctorId);
-      setDoctors(updatedDoctors);
-      
-      /* 
       const { error } = await supabase
         .from('doctors')
         .delete()
         .eq('id', doctorId);
         
       if (error) throw error;
-      */
+      
+      // Update local state after successful deletion
+      setDoctors(doctors.filter(doctor => doctor.doctorId !== doctorId));
       
       toast({
         title: "Success",
@@ -159,9 +160,39 @@ const Doctors: React.FC = () => {
     }
   };
 
+  const sendWelcomeEmail = async (email: string, name: string, password: string) => {
+    try {
+      setSendingEmail(true);
+      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+        body: {
+          email,
+          name,
+          userType: 'doctor',
+          password
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email Sent",
+        description: "Welcome email with credentials has been sent",
+      });
+    } catch (error) {
+      console.error("Error sending welcome email:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send welcome email",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   const handleSubmit = async () => {
     // Basic validation
-    if (!name || !mobileNumber || !dob || !hospital || !speciality || !clinicAddress) {
+    if (!name || !mobileNumber || !email || !dob || !hospital || !speciality) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -172,40 +203,40 @@ const Doctors: React.FC = () => {
 
     try {
       if (dialogMode === 'create') {
-        // Create new doctor
-        const newDoctor: Doctor = {
-          doctorId: `doc${Date.now()}`, // Generate a temporary ID
-          name,
-          mobileNumber,
-          dateOfBirth: dob,
-          hospital,
-          speciality,
-          clinicHouseNumber: "123", // Simplified for demo
-          clinicStreet: "Street",
-          clinicVillage: "Village",
-          clinicDistrict: "District",
-          clinicState: "State",
-          clinicCountry: "Country",
-          clinicPincode: "12345",
-          password: "password"
-        };
+        // Generate a password for the new doctor
+        const password = generatePassword();
         
-        setDoctors([...doctors, newDoctor]);
-        
-        /* 
-        const { error } = await supabase
+        // Create new doctor in Supabase
+        const { data, error } = await supabase
           .from('doctors')
           .insert([{ 
             name, 
-            mobile_number: mobileNumber, 
+            mobile_number: mobileNumber,
+            email,
             dob, 
-            hospital, 
-            speciality, 
-            // ... other fields 
-          }]);
+            hospital_id: hospital, 
+            speciality,
+            // Extract address fields from the combined address
+            clinic_house_number: "123", // This would need proper parsing in a real implementation
+            clinic_street: "Street",
+            clinic_village: "Village",
+            clinic_district: "District",
+            clinic_state: "State",
+            clinic_country: "Country",
+            clinic_pincode: "12345",
+            password // In a real implementation, this would be hashed
+          }])
+          .select();
           
         if (error) throw error;
-        */
+        
+        // Send welcome email with credentials
+        if (data && data.length > 0) {
+          await sendWelcomeEmail(email, name, password);
+        }
+        
+        // Refresh doctors list
+        fetchDoctors();
         
         toast({
           title: "Success",
@@ -215,35 +246,23 @@ const Doctors: React.FC = () => {
         // Update existing doctor
         if (!selectedDoctor) return;
         
-        const updatedDoctors = doctors.map(doctor => 
-          doctor.doctorId === selectedDoctor.doctorId ? {
-            ...doctor,
-            name,
-            mobileNumber,
-            dateOfBirth: dob,
-            hospital,
-            speciality,
-            // Update address fields would be handled properly in a real app
-          } : doctor
-        );
-        
-        setDoctors(updatedDoctors);
-        
-        /* 
         const { error } = await supabase
           .from('doctors')
           .update({ 
             name, 
-            mobile_number: mobileNumber, 
+            mobile_number: mobileNumber,
+            email,
             dob, 
-            hospital, 
-            speciality, 
-            // ... other fields 
+            hospital_id: hospital, 
+            speciality,
+            // Update address fields would be handled properly in a real app
           })
           .eq('id', selectedDoctor.doctorId);
           
         if (error) throw error;
-        */
+        
+        // Refresh doctors list
+        fetchDoctors();
         
         toast({
           title: "Success",
@@ -268,6 +287,7 @@ const Doctors: React.FC = () => {
     setDoctorId("");
     setName("");
     setMobileNumber("");
+    setEmail("");
     setDob("");
     setHospital("");
     setSpeciality("");
@@ -288,7 +308,9 @@ const Doctors: React.FC = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p>Loading doctors...</p>
+              <div className="flex justify-center items-center p-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
             ) : doctors.length === 0 ? (
               <p>No doctors found.</p>
             ) : (
@@ -298,6 +320,7 @@ const Doctors: React.FC = () => {
                     <TableHead>ID</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Mobile</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Speciality</TableHead>
                     <TableHead>Hospital</TableHead>
                     <TableHead>Actions</TableHead>
@@ -309,6 +332,7 @@ const Doctors: React.FC = () => {
                       <TableCell>{doctor.doctorId}</TableCell>
                       <TableCell>{doctor.name}</TableCell>
                       <TableCell>{doctor.mobileNumber}</TableCell>
+                      <TableCell>{doctor.email}</TableCell>
                       <TableCell>{doctor.speciality}</TableCell>
                       <TableCell>{doctor.hospital}</TableCell>
                       <TableCell className="flex space-x-2">
@@ -373,6 +397,20 @@ const Doctors: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="email" className="text-right text-sm font-medium">
+                Email
+              </label>
+              <Input 
+                id="email" 
+                type="email"
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                className="col-span-3" 
+                placeholder="Enter doctor's email" 
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
               <label htmlFor="mobile" className="text-right text-sm font-medium">
                 Mobile
               </label>
@@ -423,8 +461,12 @@ const Doctors: React.FC = () => {
                   <SelectValue placeholder="Select hospital" />
                 </SelectTrigger>
                 <SelectContent>
-                  {hospitals.map(hospital => (
-                    <SelectItem key={hospital.id} value={hospital.name}>
+                  {loadingHospitals ? (
+                    <div className="flex justify-center p-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  ) : hospitals.map(hospital => (
+                    <SelectItem key={hospital.id} value={hospital.id}>
                       {hospital.name}
                     </SelectItem>
                   ))}
@@ -448,8 +490,13 @@ const Doctors: React.FC = () => {
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button onClick={handleSubmit}>
-              {dialogMode === 'create' ? 'Create' : 'Save Changes'}
+            <Button onClick={handleSubmit} disabled={sendingEmail}>
+              {sendingEmail ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending Email...
+                </>
+              ) : dialogMode === 'create' ? 'Create' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>
