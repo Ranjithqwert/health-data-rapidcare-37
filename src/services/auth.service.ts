@@ -179,11 +179,22 @@ class AuthService {
       }
 
       // Ensure userData and email exist before proceeding
-      if (!userData || !userData.email) {
+      if (!userData) {
         console.error("User email not found");
         toast({
           title: "Error",
           description: "User not found or email not available.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      // Safely type check and extract email
+      if (!('email' in userData) || typeof userData.email !== 'string') {
+        console.error("Email field missing or invalid in user data");
+        toast({
+          title: "Error",
+          description: "Email not available for this user.",
           variant: "destructive",
         });
         return false;
