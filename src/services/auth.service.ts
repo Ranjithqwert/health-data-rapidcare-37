@@ -102,11 +102,14 @@ class AuthService {
           let userId = '';
           let userName = '';
           
-          if (data && typeof data === 'object') {
+          // Ensuring data is not null before accessing its properties
+          if (data) {
+            // Check if id exists and is of the right type
             if ('id' in data && data.id !== null && (typeof data.id === 'string' || typeof data.id === 'number')) {
               userId = String(data.id);
             }
             
+            // Check if name exists and is of the right type
             if ('name' in data && data.name !== null && typeof data.name === 'string') {
               userName = data.name;
             }
@@ -165,8 +168,19 @@ class AuthService {
         .eq('id', userId)
         .maybeSingle();
         
-      if (userError || !userData || !userData.email) {
+      if (userError) {
         console.error("Error fetching user email:", userError);
+        toast({
+          title: "Error",
+          description: "User not found or email not available.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Ensure userData and email exist before proceeding
+      if (!userData || !userData.email) {
+        console.error("User email not found");
         toast({
           title: "Error",
           description: "User not found or email not available.",
