@@ -131,7 +131,7 @@ const Users: React.FC = () => {
         emailId: user.email,
         dateOfBirth: user.dob,
         age: calculateAge(user.dob),
-        // Ensure all boolean values from the database are converted to "Yes"/"No" strings
+        // Convert database boolean values to "Yes"/"No" strings for the UI
         sugar: user.sugar ? "Yes" : "No",
         sugarLevel: user.sugar_level,
         bp: user.bp ? "Yes" : "No",
@@ -148,8 +148,8 @@ const Users: React.FC = () => {
         alcohol: user.alcohol ? "Yes" : "No",
         inTreatment: user.in_treatment ? "Yes" : "No",
         // Fix the field names to match what's in the database
-        height: user.height_cm || 0, // Changed from height to height_cm
-        weight: user.weight_kg || 0, // Changed from weight to weight_kg
+        height: user.height_cm || 0,
+        weight: user.weight_kg || 0,
         bmi: user.bmi || 0,
         obesityLevel: user.obesity_level as "Low" | "Correct" | "High" || "Correct",
         houseNumber: user.house_number || '',
@@ -357,8 +357,8 @@ const Users: React.FC = () => {
             state,
             country,
             pincode,
-            height_cm: height, // Changed from height to height_cm
-            weight_kg: weight, // Changed from weight to weight_kg
+            height_cm: height, // Use the correct field name for the database
+            weight_kg: weight, // Use the correct field name for the database
             bmi,
             obesity_level: obesity,
             // Convert "Yes"/"No" strings to boolean for the database
@@ -422,8 +422,8 @@ const Users: React.FC = () => {
             state,
             country,
             pincode,
-            height_cm: height, // Changed from height to height_cm
-            weight_kg: weight, // Changed from weight to weight_kg
+            height_cm: height, // Use the correct field name for the database
+            weight_kg: weight, // Use the correct field name for the database
             bmi,
             obesity_level: obesity,
             // Convert "Yes"/"No" strings to boolean for the database
