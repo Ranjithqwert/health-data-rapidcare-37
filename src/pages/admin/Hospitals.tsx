@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
-import { supabase, generatePassword } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Hospital } from "@/models/models";
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { generatePassword, sendWelcomeEmail } from "@/utils/email-utils";
 
 const Hospitals: React.FC = () => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
@@ -70,7 +72,7 @@ const Hospitals: React.FC = () => {
         hospitalCountry: hospital.country || '',
         hospitalPincode: hospital.pincode || '',
         // Cast the type to the expected union type
-        type: (hospital.type || 'general') as "general" | "specialty",
+        type: (hospital.type === "specialty" ? "specialty" : "general") as "general" | "specialty",
         speciality: hospital.speciality,
         numberOfICUs: hospital.number_of_icus || 0,
         numberOfOPRooms: hospital.number_of_op_rooms || 0,
@@ -94,46 +96,6 @@ const Hospitals: React.FC = () => {
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email.toLowerCase());
-  };
-
-  const sendWelcomeEmail = async (email: string, name: string, password: string) => {
-    try {
-      setSendingEmail(true);
-      console.log("Sending welcome email to:", email);
-      
-      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
-        body: {
-          email,
-          name,
-          userType: 'hospital',
-          password
-        }
-      });
-
-      if (error) {
-        console.error("Error invoking function:", error);
-        throw error;
-      }
-
-      console.log("Email function response:", data);
-      
-      toast({
-        title: "Email Sent",
-        description: "Welcome email with credentials has been sent",
-      });
-      
-      return true;
-    } catch (error) {
-      console.error("Error sending welcome email:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send welcome email: " + (error as Error).message,
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setSendingEmail(false);
-    }
   };
 
   const handleCreateHospital = () => {
@@ -163,19 +125,17 @@ const Hospitals: React.FC = () => {
     if (!confirm("Are you sure you want to delete this hospital?")) return;
     
     try {
-      // In a real implementation, we would delete from Supabase
-      // For now, we'll just update our local state
-      const updatedHospitals = hospitals.filter(hospital => hospital.hospitalId !== hospitalId);
-      setHospitals(updatedHospitals);
-      
-      /* 
+      // Delete from Supabase
       const { error } = await supabase
         .from('hospitals')
         .delete()
         .eq('id', hospitalId);
         
       if (error) throw error;
-      */
+      
+      // Update local state
+      const updatedHospitals = hospitals.filter(hospital => hospital.hospitalId !== hospitalId);
+      setHospitals(updatedHospitals);
       
       toast({
         title: "Success",
@@ -270,7 +230,11 @@ const Hospitals: React.FC = () => {
         
         // Send welcome email with credentials
         if (data && data.length > 0) {
-          const emailSent = await sendWelcomeEmail(emailId, hospitalName, password);
+          setSendingEmail(true);
+          const hospitalId = data[0].id;
+          const emailSent = await sendWelcomeEmail(emailId, hospitalName, 'hospital', password, hospitalId);
+          setSendingEmail(false);
+          
           if (!emailSent) {
             console.warn("Email not sent, but hospital was created");
           }
@@ -287,6 +251,40 @@ const Hospitals: React.FC = () => {
         // Update existing hospital
         if (!selectedHospital) return;
         
+        // Parse address
+        const addressParts = address.split(',').map(part => part.trim());
+        const houseNumber = addressParts[0] || '';
+        const street = addressParts[1] || '';
+        const village = addressParts[2] || '';
+        const district = addressParts[3] || '';
+        const statePart = addressParts[4] || '';
+        const country = addressParts[5] || '';
+        const pincode = addressParts[6] || '';
+        
+        const { error } = await supabase
+          .from('hospitals')
+          .update({ 
+            name: hospitalName, 
+            email: emailId, 
+            mobile, 
+            license_number: licenseNumber,
+            house_number: houseNumber,
+            street: street,
+            village: village,
+            district: district,
+            state: statePart,
+            country: country,
+            pincode: pincode,
+            type: type,
+            speciality: type === 'specialty' ? speciality : null,
+            number_of_icus: numberOfICUs,
+            number_of_op_rooms: numberOfOPRooms
+          })
+          .eq('id', selectedHospital.hospitalId);
+          
+        if (error) throw error;
+        
+        // Update local state
         const updatedHospitals = hospitals.map(hospital => 
           hospital.hospitalId === selectedHospital.hospitalId ? {
             ...hospital,
@@ -294,31 +292,22 @@ const Hospitals: React.FC = () => {
             emailId,
             mobile,
             hospitalLicenseNumber: licenseNumber,
+            hospitalHouseNumber: houseNumber,
+            hospitalStreet: street,
+            hospitalVillage: village,
+            hospitalDistrict: district,
+            hospitalState: statePart,
+            hospitalCountry: country,
+            hospitalPincode: pincode,
             type,
-            ...(type === "specialty" && { speciality }),
+            speciality: type === "specialty" ? speciality : undefined,
             numberOfICUs,
             numberOfOPRooms,
             numberOfDoctors,
-            // Update address fields would be handled properly in a real app
           } : hospital
         );
         
         setHospitals(updatedHospitals);
-        
-        /* 
-        const { error } = await supabase
-          .from('hospitals')
-          .update({ 
-            name: hospitalName, 
-            email: emailId, 
-            mobile, 
-            license_number: licenseNumber, 
-            // ... other fields 
-          })
-          .eq('id', selectedHospital.hospitalId);
-          
-        if (error) throw error;
-        */
         
         toast({
           title: "Success",
@@ -591,8 +580,15 @@ const Hospitals: React.FC = () => {
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button onClick={handleSubmit}>
-              {dialogMode === 'create' ? 'Create' : 'Save Changes'}
+            <Button onClick={handleSubmit} disabled={sendingEmail}>
+              {sendingEmail ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending Email...
+                </>
+              ) : (
+                dialogMode === 'create' ? 'Create' : 'Save Changes'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
