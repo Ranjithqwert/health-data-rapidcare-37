@@ -1,6 +1,8 @@
+
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
-import { supabase, generatePassword } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
+import { generatePassword, sendWelcomeEmail } from "@/utils/email-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Doctor } from "@/models/models";
