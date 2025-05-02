@@ -1,10 +1,11 @@
 
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
-import { apiService } from "@/services/api.service";
 import { authService } from "@/services/auth.service";
 import { Hospital } from "@/models/models";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 const HospitalHome: React.FC = () => {
   const [hospital, setHospital] = useState<Hospital | null>(null);
@@ -12,12 +13,53 @@ const HospitalHome: React.FC = () => {
   
   useEffect(() => {
     const fetchHospitalDetails = async () => {
-      const hospitalId = authService.getUserId();
-      if (hospitalId) {
-        const hospitalData = await apiService.getHospitalDetails(hospitalId);
-        setHospital(hospitalData);
+      try {
+        const hospitalId = authService.getUserId();
+        if (hospitalId) {
+          const { data, error } = await supabase
+            .from('hospitals')
+            .select('*')
+            .eq('id', hospitalId)
+            .single();
+          
+          if (error) throw error;
+          
+          if (data) {
+            // Transform the data to match our Hospital model
+            const transformedHospital: Hospital = {
+              hospitalId: data.id,
+              hospitalName: data.name || '',
+              emailId: data.email || '',
+              mobile: data.mobile_number || '',
+              hospitalLicenseNumber: data.license_number || '',
+              hospitalHouseNumber: data.house_number || '',
+              hospitalStreet: data.street || '',
+              hospitalVillage: data.village || '',
+              hospitalDistrict: data.district || '',
+              hospitalState: data.state || '',
+              hospitalCountry: data.country || '',
+              hospitalPincode: data.pincode || '',
+              type: data.type as "general" | "specialty" || "general",
+              speciality: data.speciality,
+              numberOfICUs: data.number_of_icus || 0,
+              numberOfOPRooms: data.number_of_op_rooms || 0,
+              numberOfDoctors: data.number_of_doctors || 0,
+              password: '********' // Masking the password
+            };
+            
+            setHospital(transformedHospital);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching hospital details:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch hospital details.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     
     fetchHospitalDetails();

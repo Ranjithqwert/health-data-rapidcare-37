@@ -1,10 +1,11 @@
 
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
-import { apiService } from "@/services/api.service";
 import { authService } from "@/services/auth.service";
 import { Doctor } from "@/models/models";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 const DoctorHome: React.FC = () => {
   const [doctor, setDoctor] = useState<Doctor | null>(null);
@@ -12,12 +13,50 @@ const DoctorHome: React.FC = () => {
   
   useEffect(() => {
     const fetchDoctorDetails = async () => {
-      const doctorId = authService.getUserId();
-      if (doctorId) {
-        const doctorData = await apiService.getDoctorDetails(doctorId);
-        setDoctor(doctorData);
+      try {
+        const doctorId = authService.getUserId();
+        if (doctorId) {
+          const { data, error } = await supabase
+            .from('doctors')
+            .select('*')
+            .eq('id', doctorId)
+            .single();
+          
+          if (error) throw error;
+          
+          if (data) {
+            // Transform the data to match our Doctor model
+            const transformedDoctor: Doctor = {
+              doctorId: data.id,
+              name: data.name,
+              mobileNumber: data.mobile_number || '',
+              email: data.email || '',
+              dateOfBirth: data.dob || '',
+              hospital: data.hospital_id || '',
+              speciality: data.speciality || '',
+              clinicHouseNumber: data.clinic_house_number || '',
+              clinicStreet: data.clinic_street || '',
+              clinicVillage: data.clinic_village || '',
+              clinicDistrict: data.clinic_district || '',
+              clinicState: data.clinic_state || '',
+              clinicCountry: data.clinic_country || '',
+              clinicPincode: data.clinic_pincode || '',
+              password: '********' // Masking the password
+            };
+            
+            setDoctor(transformedDoctor);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching doctor details:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch doctor details.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     
     fetchDoctorDetails();
@@ -67,25 +106,26 @@ const DoctorHome: React.FC = () => {
               <div>
                 <h3 className="font-medium text-gray-700">Basic Details</h3>
                 <div className="mt-2 space-y-2">
-                  <p><span className="font-medium">Doctor ID:</span> {doctor.doctorId}</p>
-                  <p><span className="font-medium">Name:</span> {doctor.name}</p>
-                  <p><span className="font-medium">Date of Birth:</span> {doctor.dateOfBirth}</p>
-                  <p><span className="font-medium">Mobile Number:</span> {doctor.mobileNumber}</p>
-                  <p><span className="font-medium">Hospital:</span> {doctor.hospital}</p>
-                  <p><span className="font-medium">Speciality:</span> {doctor.speciality}</p>
+                  <p><span className="font-medium">Doctor ID:</span> {doctor?.doctorId}</p>
+                  <p><span className="font-medium">Name:</span> {doctor?.name}</p>
+                  <p><span className="font-medium">Date of Birth:</span> {doctor?.dateOfBirth}</p>
+                  <p><span className="font-medium">Mobile Number:</span> {doctor?.mobileNumber}</p>
+                  <p><span className="font-medium">Email:</span> {doctor?.email}</p>
+                  <p><span className="font-medium">Hospital:</span> {doctor?.hospital}</p>
+                  <p><span className="font-medium">Speciality:</span> {doctor?.speciality}</p>
                 </div>
               </div>
               
               <div>
                 <h3 className="font-medium text-gray-700">Clinic Address</h3>
                 <div className="mt-2 space-y-2">
-                  <p><span className="font-medium">House Number:</span> {doctor.clinicHouseNumber}</p>
-                  <p><span className="font-medium">Street:</span> {doctor.clinicStreet}</p>
-                  <p><span className="font-medium">Village:</span> {doctor.clinicVillage}</p>
-                  <p><span className="font-medium">District:</span> {doctor.clinicDistrict}</p>
-                  <p><span className="font-medium">State:</span> {doctor.clinicState}</p>
-                  <p><span className="font-medium">Country:</span> {doctor.clinicCountry}</p>
-                  <p><span className="font-medium">PIN Code:</span> {doctor.clinicPincode}</p>
+                  <p><span className="font-medium">House Number:</span> {doctor?.clinicHouseNumber}</p>
+                  <p><span className="font-medium">Street:</span> {doctor?.clinicStreet}</p>
+                  <p><span className="font-medium">Village:</span> {doctor?.clinicVillage}</p>
+                  <p><span className="font-medium">District:</span> {doctor?.clinicDistrict}</p>
+                  <p><span className="font-medium">State:</span> {doctor?.clinicState}</p>
+                  <p><span className="font-medium">Country:</span> {doctor?.clinicCountry}</p>
+                  <p><span className="font-medium">PIN Code:</span> {doctor?.clinicPincode}</p>
                 </div>
               </div>
             </div>
