@@ -30,7 +30,7 @@ const HospitalHome: React.FC = () => {
               hospitalId: data.id,
               hospitalName: data.name,
               emailId: data.email,
-              mobile: data.mobile, // Fixed: using mobile instead of mobile_number
+              mobile: data.mobile, 
               hospitalLicenseNumber: data.license_number,
               hospitalHouseNumber: data.house_number || '',
               hospitalStreet: data.street || '',
@@ -39,7 +39,8 @@ const HospitalHome: React.FC = () => {
               hospitalState: data.state || '',
               hospitalCountry: data.country || '',
               hospitalPincode: data.pincode || '',
-              type: data.type || 'general',
+              // Ensure we cast the type to the expected union type
+              type: (data.type || 'general') as "general" | "specialty",
               speciality: data.speciality,
               numberOfICUs: data.number_of_icus || 0,
               numberOfOPRooms: data.number_of_op_rooms || 0,
@@ -109,33 +110,33 @@ const HospitalHome: React.FC = () => {
               <div>
                 <h3 className="font-medium text-gray-700">Basic Details</h3>
                 <div className="mt-2 space-y-2">
-                  <p><span className="font-medium">Hospital ID:</span> {hospital.hospitalId}</p>
-                  <p><span className="font-medium">Name:</span> {hospital.hospitalName}</p>
-                  <p><span className="font-medium">Email:</span> {hospital.emailId}</p>
-                  <p><span className="font-medium">Mobile Number:</span> {hospital.mobile}</p>
-                  <p><span className="font-medium">License Number:</span> {hospital.hospitalLicenseNumber}</p>
-                  <p><span className="font-medium">Type:</span> {hospital.type}</p>
-                  {hospital.type === 'specialty' && <p><span className="font-medium">Speciality:</span> {hospital.speciality}</p>}
+                  <p><span className="font-medium">Hospital ID:</span> {hospital?.hospitalId}</p>
+                  <p><span className="font-medium">Name:</span> {hospital?.hospitalName}</p>
+                  <p><span className="font-medium">Email:</span> {hospital?.emailId}</p>
+                  <p><span className="font-medium">Mobile Number:</span> {hospital?.mobile}</p>
+                  <p><span className="font-medium">License Number:</span> {hospital?.hospitalLicenseNumber}</p>
+                  <p><span className="font-medium">Type:</span> {hospital?.type}</p>
+                  {hospital?.type === 'specialty' && <p><span className="font-medium">Speciality:</span> {hospital.speciality}</p>}
                 </div>
               </div>
               
               <div>
                 <h3 className="font-medium text-gray-700">Facilities</h3>
                 <div className="mt-2 space-y-2">
-                  <p><span className="font-medium">Number of ICUs:</span> {hospital.numberOfICUs}</p>
-                  <p><span className="font-medium">Number of OP Rooms:</span> {hospital.numberOfOPRooms}</p>
-                  <p><span className="font-medium">Number of Doctors:</span> {hospital.numberOfDoctors}</p>
+                  <p><span className="font-medium">Number of ICUs:</span> {hospital?.numberOfICUs}</p>
+                  <p><span className="font-medium">Number of OP Rooms:</span> {hospital?.numberOfOPRooms}</p>
+                  <p><span className="font-medium">Number of Doctors:</span> {hospital?.numberOfDoctors}</p>
                 </div>
                 
                 <h3 className="font-medium text-gray-700 mt-4">Address</h3>
                 <div className="mt-2 space-y-2">
-                  <p><span className="font-medium">House Number:</span> {hospital.hospitalHouseNumber}</p>
-                  <p><span className="font-medium">Street:</span> {hospital.hospitalStreet}</p>
-                  <p><span className="font-medium">Village:</span> {hospital.hospitalVillage}</p>
-                  <p><span className="font-medium">District:</span> {hospital.hospitalDistrict}</p>
-                  <p><span className="font-medium">State:</span> {hospital.hospitalState}</p>
-                  <p><span className="font-medium">Country:</span> {hospital.hospitalCountry}</p>
-                  <p><span className="font-medium">PIN Code:</span> {hospital.hospitalPincode}</p>
+                  <p><span className="font-medium">House Number:</span> {hospital?.hospitalHouseNumber}</p>
+                  <p><span className="font-medium">Street:</span> {hospital?.hospitalStreet}</p>
+                  <p><span className="font-medium">Village:</span> {hospital?.hospitalVillage}</p>
+                  <p><span className="font-medium">District:</span> {hospital?.hospitalDistrict}</p>
+                  <p><span className="font-medium">State:</span> {hospital?.hospitalState}</p>
+                  <p><span className="font-medium">Country:</span> {hospital?.hospitalCountry}</p>
+                  <p><span className="font-medium">PIN Code:</span> {hospital?.hospitalPincode}</p>
                 </div>
               </div>
             </div>

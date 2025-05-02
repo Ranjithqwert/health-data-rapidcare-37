@@ -130,25 +130,27 @@ const Users: React.FC = () => {
         emailId: user.email,
         dateOfBirth: user.dob,
         age: calculateAge(user.dob),
-        sugar: user.sugar || "No",
+        // Ensure all boolean values from the database are converted to "Yes"/"No" strings
+        sugar: user.sugar ? "Yes" : "No",
         sugarLevel: user.sugar_level,
-        bp: user.bp || "No",
+        bp: user.bp ? "Yes" : "No",
         bpLevel: user.bp_level,
-        cardiac: user.cardiac || "No",
+        cardiac: user.cardiac ? "Yes" : "No",
         cardiacInfo: user.cardiac_info,
-        kidney: user.kidney || "No",
+        kidney: user.kidney ? "Yes" : "No",
         kidneyInfo: user.kidney_info,
-        liver: user.liver || "No",
+        liver: user.liver ? "Yes" : "No",
         liverInfo: user.liver_info,
-        lungs: user.lungs || "No",
+        lungs: user.lungs ? "Yes" : "No",
         lungsInfo: user.lungs_info,
-        smoke: user.smoke || "No",
-        alcohol: user.alcohol || "No",
-        inTreatment: user.in_treatment || "No",
+        smoke: user.smoke ? "Yes" : "No",
+        alcohol: user.alcohol ? "Yes" : "No",
+        inTreatment: user.in_treatment ? "Yes" : "No",
+        // These fields may have different names in the DB compared to our model
         height: user.height || 0,
         weight: user.weight || 0,
         bmi: user.bmi || 0,
-        obesityLevel: user.obesity_level || "Correct",
+        obesityLevel: user.obesity_level as "Low" | "Correct" | "High" || "Correct",
         houseNumber: user.house_number || '',
         street: user.street || '',
         village: user.village || '',
@@ -339,10 +341,10 @@ const Users: React.FC = () => {
         const password = generatePassword();
         console.log("Generated password:", password);
         
-        // Create new user in Supabase
+        // Create new user in Supabase - fix the field mapping
         const { data, error } = await supabase
           .from('patients')
-          .insert([{
+          .insert({
             name,
             email,
             mobile_number: mobile,
@@ -358,24 +360,25 @@ const Users: React.FC = () => {
             weight,
             bmi,
             obesity_level: obesity,
-            sugar,
+            // Convert "Yes"/"No" strings to boolean for the database
+            sugar: sugar === "Yes",
             sugar_level: sugar === "Yes" ? sugarLevel : null,
-            bp,
+            bp: bp === "Yes",
             bp_level: bp === "Yes" ? bpLevel : null,
-            cardiac,
+            cardiac: cardiac === "Yes",
             cardiac_info: cardiac === "Yes" ? cardiacInfo : null,
-            kidney,
+            kidney: kidney === "Yes",
             kidney_info: kidney === "Yes" ? kidneyInfo : null,
-            liver,
+            liver: liver === "Yes",
             liver_info: liver === "Yes" ? liverInfo : null,
-            lungs,
+            lungs: lungs === "Yes",
             lungs_info: lungs === "Yes" ? lungsInfo : null,
-            smoke,
-            alcohol,
-            in_treatment: inTreatment,
+            smoke: smoke === "Yes",
+            alcohol: alcohol === "Yes",
+            in_treatment: inTreatment === "Yes",
             password, // Store the password in the database
             created_at: new Date().toISOString()
-          }])
+          })
           .select();
           
         if (error) {
@@ -422,21 +425,22 @@ const Users: React.FC = () => {
             weight,
             bmi,
             obesity_level: obesity,
-            sugar,
+            // Convert "Yes"/"No" strings to boolean for the database
+            sugar: sugar === "Yes",
             sugar_level: sugar === "Yes" ? sugarLevel : null,
-            bp,
+            bp: bp === "Yes",
             bp_level: bp === "Yes" ? bpLevel : null,
-            cardiac,
+            cardiac: cardiac === "Yes",
             cardiac_info: cardiac === "Yes" ? cardiacInfo : null,
-            kidney,
+            kidney: kidney === "Yes",
             kidney_info: kidney === "Yes" ? kidneyInfo : null,
-            liver,
+            liver: liver === "Yes",
             liver_info: liver === "Yes" ? liverInfo : null,
-            lungs,
+            lungs: lungs === "Yes",
             lungs_info: lungs === "Yes" ? lungsInfo : null,
-            smoke,
-            alcohol,
-            in_treatment: inTreatment,
+            smoke: smoke === "Yes",
+            alcohol: alcohol === "Yes",
+            in_treatment: inTreatment === "Yes",
           })
           .eq('id', selectedUser.userId);
           

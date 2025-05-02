@@ -69,7 +69,8 @@ const Hospitals: React.FC = () => {
         hospitalState: hospital.state || '',
         hospitalCountry: hospital.country || '',
         hospitalPincode: hospital.pincode || '',
-        type: hospital.type || 'general',
+        // Cast the type to the expected union type
+        type: (hospital.type || 'general') as "general" | "specialty",
         speciality: hospital.speciality,
         numberOfICUs: hospital.number_of_icus || 0,
         numberOfOPRooms: hospital.number_of_op_rooms || 0,
