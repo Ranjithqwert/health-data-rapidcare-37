@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, generatePassword } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { User } from "@/models/models";
@@ -8,12 +8,12 @@ import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FormLabel } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
+import { Loader2 } from "lucide-react";
+import { FormLabel } from "@/components/ui/form";
 
 const Users: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -64,6 +64,7 @@ const Users: React.FC = () => {
   const [bmi, setBmi] = useState<number>(0);
   const [obesity, setObesity] = useState<string>("");
   const [age, setAge] = useState<number>(0);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     // Calculate BMI whenever height or weight changes
@@ -107,80 +108,7 @@ const Users: React.FC = () => {
     try {
       setLoading(true);
       
-      // For demonstration purposes, we'll create mock data
-      const mockUsers: User[] = [
-        {
-          userId: "user1",
-          name: "John Doe",
-          mobileNumber: "1234567890",
-          emailId: "john@example.com",
-          dateOfBirth: "1990-05-15",
-          age: 33,
-          sugar: "No",
-          bp: "No",
-          cardiac: "No",
-          kidney: "No",
-          liver: "No",
-          lungs: "No",
-          smoke: "Yes",
-          alcohol: "No",
-          inTreatment: "No",
-          height: 175,
-          weight: 75,
-          bmi: 24.5,
-          obesityLevel: "Correct",
-          houseNumber: "123",
-          street: "Main Street",
-          village: "Downtown",
-          district: "Central",
-          state: "California",
-          country: "USA",
-          pincode: "90001",
-          password: "********", 
-          createdDate: "15",
-          createdMonth: "May",
-          createdYear: "2023"
-        },
-        {
-          userId: "user2",
-          name: "Jane Smith",
-          mobileNumber: "9876543210",
-          emailId: "jane@example.com",
-          dateOfBirth: "1985-08-22",
-          age: 38,
-          sugar: "Yes",
-          sugarLevel: "140 mg/dL",
-          bp: "Yes",
-          bpLevel: "140/90 mmHg",
-          cardiac: "No",
-          kidney: "No",
-          liver: "No",
-          lungs: "No",
-          smoke: "No",
-          alcohol: "Yes",
-          inTreatment: "Yes",
-          height: 165,
-          weight: 68,
-          bmi: 25,
-          obesityLevel: "High",
-          houseNumber: "456",
-          street: "Oak Avenue",
-          village: "Suburbia",
-          district: "West",
-          state: "New York",
-          country: "USA",
-          pincode: "10001",
-          password: "********", 
-          createdDate: "10",
-          createdMonth: "June",
-          createdYear: "2023"
-        }
-      ];
-      
-      setUsers(mockUsers);
-      
-      // In a real implementation, we would fetch from Supabase
-      /*
+      // Real implementation using Supabase
       const { data, error } = await supabase
         .from('patients')
         .select('*');
@@ -194,8 +122,47 @@ const Users: React.FC = () => {
         return;
       }
       
-      setUsers(data || []);
-      */
+      // Transform the data to match our User model
+      const transformedUsers: User[] = data.map(user => ({
+        userId: user.id,
+        name: user.name,
+        mobileNumber: user.mobile_number,
+        emailId: user.email,
+        dateOfBirth: user.dob,
+        age: calculateAge(user.dob),
+        sugar: user.sugar || "No",
+        sugarLevel: user.sugar_level,
+        bp: user.bp || "No",
+        bpLevel: user.bp_level,
+        cardiac: user.cardiac || "No",
+        cardiacInfo: user.cardiac_info,
+        kidney: user.kidney || "No",
+        kidneyInfo: user.kidney_info,
+        liver: user.liver || "No",
+        liverInfo: user.liver_info,
+        lungs: user.lungs || "No",
+        lungsInfo: user.lungs_info,
+        smoke: user.smoke || "No",
+        alcohol: user.alcohol || "No",
+        inTreatment: user.in_treatment || "No",
+        height: user.height || 0,
+        weight: user.weight || 0,
+        bmi: user.bmi || 0,
+        obesityLevel: user.obesity_level || "Correct",
+        houseNumber: user.house_number || '',
+        street: user.street || '',
+        village: user.village || '',
+        district: user.district || '',
+        state: user.state || '',
+        country: user.country || '',
+        pincode: user.pincode || '',
+        password: '********',  // Masking the password
+        createdDate: new Date(user.created_at).getDate().toString(),
+        createdMonth: new Date(user.created_at).toLocaleString('default', { month: 'long' }),
+        createdYear: new Date(user.created_at).getFullYear().toString()
+      }));
+      
+      setUsers(transformedUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
       toast({
@@ -206,6 +173,18 @@ const Users: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to calculate age
+  const calculateAge = (dob: string) => {
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
   };
 
   const handleCreateUser = () => {
@@ -288,6 +267,51 @@ const Users: React.FC = () => {
     }
   };
 
+  const validateEmail = (email: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email.toLowerCase());
+  };
+
+  const sendWelcomeEmail = async (email: string, name: string, password: string) => {
+    try {
+      setSendingEmail(true);
+      console.log("Sending welcome email to:", email);
+      
+      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+        body: {
+          email,
+          name,
+          userType: 'user',
+          password
+        }
+      });
+
+      if (error) {
+        console.error("Error invoking function:", error);
+        throw error;
+      }
+
+      console.log("Email function response:", data);
+      
+      toast({
+        title: "Email Sent",
+        description: "Welcome email with credentials has been sent",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error sending welcome email:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send welcome email: " + (error as Error).message,
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   const handleSubmit = async () => {
     // Basic validation
     if (!name || !email || !mobile || !dob) {
@@ -299,63 +323,78 @@ const Users: React.FC = () => {
       return;
     }
 
+    // Validate email format
+    if (!validateEmail(email)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (dialogMode === 'create') {
-        // Create new user
-        const newUser: User = {
-          userId: `user${Date.now()}`, // Generate a temporary ID
-          name,
-          mobileNumber: mobile,
-          emailId: email,
-          dateOfBirth: dob,
-          age: age,
-          sugar: sugar,
-          sugarLevel: sugar === "Yes" ? sugarLevel : undefined,
-          bp: bp,
-          bpLevel: bp === "Yes" ? bpLevel : undefined,
-          cardiac: cardiac,
-          cardiacInfo: cardiac === "Yes" ? cardiacInfo : undefined,
-          kidney: kidney,
-          kidneyInfo: kidney === "Yes" ? kidneyInfo : undefined,
-          liver: liver,
-          liverInfo: liver === "Yes" ? liverInfo : undefined,
-          lungs: lungs,
-          lungsInfo: lungs === "Yes" ? lungsInfo : undefined,
-          smoke: smoke,
-          alcohol: alcohol,
-          inTreatment: inTreatment,
-          height: height,
-          weight: weight, 
-          bmi: bmi, 
-          obesityLevel: obesity as "Low" | "Correct" | "High",
-          houseNumber: houseNumber,
-          street: street,
-          village: village,
-          district: district,
-          state: state,
-          country: country,
-          pincode: pincode,
-          password: "password", // Default password
-          createdDate: new Date().getDate().toString(),
-          createdMonth: new Date().toLocaleString('default', { month: 'long' }),
-          createdYear: new Date().getFullYear().toString()
-        };
+        // Generate a password for the new user
+        const password = generatePassword();
+        console.log("Generated password:", password);
         
-        setUsers([...users, newUser]);
-        
-        /* 
-        const { error } = await supabase
+        // Create new user in Supabase
+        const { data, error } = await supabase
           .from('patients')
-          .insert([{ 
-            name, 
-            email, 
-            mobile_number: mobile, 
+          .insert([{
+            name,
+            email,
+            mobile_number: mobile,
             dob,
-            // ... other fields 
-          }]);
+            house_number: houseNumber,
+            street,
+            village,
+            district,
+            state,
+            country,
+            pincode,
+            height,
+            weight,
+            bmi,
+            obesity_level: obesity,
+            sugar,
+            sugar_level: sugar === "Yes" ? sugarLevel : null,
+            bp,
+            bp_level: bp === "Yes" ? bpLevel : null,
+            cardiac,
+            cardiac_info: cardiac === "Yes" ? cardiacInfo : null,
+            kidney,
+            kidney_info: kidney === "Yes" ? kidneyInfo : null,
+            liver,
+            liver_info: liver === "Yes" ? liverInfo : null,
+            lungs,
+            lungs_info: lungs === "Yes" ? lungsInfo : null,
+            smoke,
+            alcohol,
+            in_treatment: inTreatment,
+            password, // Store the password in the database
+            created_at: new Date().toISOString()
+          }])
+          .select();
           
-        if (error) throw error;
-        */
+        if (error) {
+          console.error("Error creating user:", error);
+          throw error;
+        }
+        
+        console.log("Created user:", data);
+        
+        // Send welcome email with credentials
+        if (data && data.length > 0) {
+          const emailSent = await sendWelcomeEmail(email, name, password);
+          if (!emailSent) {
+            console.warn("Email not sent, but user was created");
+          }
+        }
+        
+        // Refresh users list
+        fetchUsers();
         
         toast({
           title: "Success",
@@ -365,59 +404,46 @@ const Users: React.FC = () => {
         // Update existing user
         if (!selectedUser) return;
         
-        const updatedUsers = users.map(user => 
-          user.userId === selectedUser.userId ? {
-            ...user,
-            name,
-            emailId: email,
-            mobileNumber: mobile,
-            dateOfBirth: dob,
-            age: age,
-            sugar: sugar,
-            sugarLevel: sugar === "Yes" ? sugarLevel : undefined,
-            bp: bp,
-            bpLevel: bp === "Yes" ? bpLevel : undefined,
-            cardiac: cardiac,
-            cardiacInfo: cardiac === "Yes" ? cardiacInfo : undefined,
-            kidney: kidney,
-            kidneyInfo: kidney === "Yes" ? kidneyInfo : undefined,
-            liver: liver,
-            liverInfo: liver === "Yes" ? liverInfo : undefined,
-            lungs: lungs,
-            lungsInfo: lungs === "Yes" ? lungsInfo : undefined,
-            smoke: smoke,
-            alcohol: alcohol,
-            inTreatment: inTreatment,
-            height: height,
-            weight: weight, 
-            bmi: bmi, 
-            obesityLevel: obesity as "Low" | "Correct" | "High",
-            houseNumber: houseNumber,
-            street: street,
-            village: village,
-            district: district,
-            state: state,
-            country: country,
-            pincode: pincode,
-          } : user
-        );
-        
-        setUsers(updatedUsers);
-        
-        /* 
         const { error } = await supabase
           .from('patients')
-          .update({ 
-            name, 
-            email, 
-            mobile_number: mobile, 
+          .update({
+            name,
+            email,
+            mobile_number: mobile,
             dob,
-            // ... other fields 
+            house_number: houseNumber,
+            street,
+            village,
+            district,
+            state,
+            country,
+            pincode,
+            height,
+            weight,
+            bmi,
+            obesity_level: obesity,
+            sugar,
+            sugar_level: sugar === "Yes" ? sugarLevel : null,
+            bp,
+            bp_level: bp === "Yes" ? bpLevel : null,
+            cardiac,
+            cardiac_info: cardiac === "Yes" ? cardiacInfo : null,
+            kidney,
+            kidney_info: kidney === "Yes" ? kidneyInfo : null,
+            liver,
+            liver_info: liver === "Yes" ? liverInfo : null,
+            lungs,
+            lungs_info: lungs === "Yes" ? lungsInfo : null,
+            smoke,
+            alcohol,
+            in_treatment: inTreatment,
           })
           .eq('id', selectedUser.userId);
           
         if (error) throw error;
-        */
+        
+        // Refresh users list
+        fetchUsers();
         
         toast({
           title: "Success",
@@ -431,7 +457,7 @@ const Users: React.FC = () => {
       console.error("Error saving user:", error);
       toast({
         title: "Error",
-        description: "Failed to save user",
+        description: "Failed to save user: " + (error as Error).message,
         variant: "destructive",
       });
     }
@@ -536,7 +562,9 @@ const Users: React.FC = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p>Loading users...</p>
+              <div className="flex justify-center items-center p-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
             ) : users.length === 0 ? (
               <p>No users found.</p>
             ) : (
@@ -910,8 +938,13 @@ const Users: React.FC = () => {
                   Next
                 </Button>
               ) : (
-                <Button onClick={handleSubmit}>
-                  {dialogMode === 'create' ? 'Create' : 'Save Changes'}
+                <Button onClick={handleSubmit} disabled={sendingEmail}>
+                  {sendingEmail ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending Email...
+                    </>
+                  ) : dialogMode === 'create' ? 'Create' : 'Save Changes'}
                 </Button>
               )}
             </div>

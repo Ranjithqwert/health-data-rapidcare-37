@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, generatePassword } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Hospital } from "@/models/models";
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 
 const Hospitals: React.FC = () => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
@@ -17,6 +18,7 @@ const Hospitals: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
   
   // Form fields
   const [hospitalId, setHospitalId] = useState("");
@@ -39,53 +41,7 @@ const Hospitals: React.FC = () => {
     try {
       setLoading(true);
       
-      // For demonstration purposes, we'll create mock data
-      const mockHospitals: Hospital[] = [
-        {
-          hospitalId: "hosp1",
-          hospitalName: "City General Hospital",
-          emailId: "city.general@example.com",
-          mobile: "1234567890",
-          hospitalLicenseNumber: "LIC123456",
-          hospitalHouseNumber: "1000",
-          hospitalStreet: "Main Street",
-          hospitalVillage: "Downtown",
-          hospitalDistrict: "Central",
-          hospitalState: "California",
-          hospitalCountry: "USA",
-          hospitalPincode: "90001",
-          type: "general",
-          numberOfICUs: 20,
-          numberOfOPRooms: 50,
-          numberOfDoctors: 100,
-          password: "********"
-        },
-        {
-          hospitalId: "hosp2",
-          hospitalName: "Heart Specialty Center",
-          emailId: "heart.center@example.com",
-          mobile: "9876543210",
-          hospitalLicenseNumber: "LIC789012",
-          hospitalHouseNumber: "500",
-          hospitalStreet: "Oak Avenue",
-          hospitalVillage: "Medical District",
-          hospitalDistrict: "West",
-          hospitalState: "New York",
-          hospitalCountry: "USA",
-          hospitalPincode: "10001",
-          type: "specialty",
-          speciality: "Cardiology",
-          numberOfICUs: 15,
-          numberOfOPRooms: 30,
-          numberOfDoctors: 45,
-          password: "********"
-        }
-      ];
-      
-      setHospitals(mockHospitals);
-      
-      // In a real implementation, we would fetch from Supabase
-      /*
+      // Real implementation using Supabase
       const { data, error } = await supabase
         .from('hospitals')
         .select('*');
@@ -99,8 +55,29 @@ const Hospitals: React.FC = () => {
         return;
       }
       
-      setHospitals(data || []);
-      */
+      // Transform the data to match our Hospital model
+      const transformedHospitals: Hospital[] = data.map(hospital => ({
+        hospitalId: hospital.id,
+        hospitalName: hospital.name,
+        emailId: hospital.email,
+        mobile: hospital.mobile,
+        hospitalLicenseNumber: hospital.license_number || '',
+        hospitalHouseNumber: hospital.house_number || '',
+        hospitalStreet: hospital.street || '',
+        hospitalVillage: hospital.village || '',
+        hospitalDistrict: hospital.district || '',
+        hospitalState: hospital.state || '',
+        hospitalCountry: hospital.country || '',
+        hospitalPincode: hospital.pincode || '',
+        type: hospital.type || 'general',
+        speciality: hospital.speciality,
+        numberOfICUs: hospital.number_of_icus || 0,
+        numberOfOPRooms: hospital.number_of_op_rooms || 0,
+        numberOfDoctors: hospital.number_of_doctors || 0,
+        password: '********' // Masking the password
+      }));
+      
+      setHospitals(transformedHospitals);
     } catch (error) {
       console.error("Error fetching hospitals:", error);
       toast({
@@ -110,6 +87,51 @@ const Hospitals: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const validateEmail = (email: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email.toLowerCase());
+  };
+
+  const sendWelcomeEmail = async (email: string, name: string, password: string) => {
+    try {
+      setSendingEmail(true);
+      console.log("Sending welcome email to:", email);
+      
+      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+        body: {
+          email,
+          name,
+          userType: 'hospital',
+          password
+        }
+      });
+
+      if (error) {
+        console.error("Error invoking function:", error);
+        throw error;
+      }
+
+      console.log("Email function response:", data);
+      
+      toast({
+        title: "Email Sent",
+        description: "Welcome email with credentials has been sent",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error sending welcome email:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send welcome email: " + (error as Error).message,
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -188,45 +210,73 @@ const Hospitals: React.FC = () => {
       return;
     }
 
+    // Validate email format
+    if (!validateEmail(emailId)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (dialogMode === 'create') {
-        // Create new hospital
-        const newHospital: Hospital = {
-          hospitalId: `hosp${Date.now()}`, // Generate a temporary ID
-          hospitalName,
-          emailId,
-          mobile,
-          hospitalLicenseNumber: licenseNumber,
-          hospitalHouseNumber: "123", // Simplified for demo
-          hospitalStreet: "Street",
-          hospitalVillage: "Village",
-          hospitalDistrict: "District",
-          hospitalState: "State",
-          hospitalCountry: "Country",
-          hospitalPincode: "12345",
-          type,
-          ...(type === "specialty" && { speciality }),
-          numberOfICUs,
-          numberOfOPRooms,
-          numberOfDoctors,
-          password: "password"
-        };
+        // Generate a password for the new hospital
+        const password = generatePassword();
+        console.log("Generated password:", password);
         
-        setHospitals([...hospitals, newHospital]);
+        // Parse address (simplified for this example)
+        const addressParts = address.split(',').map(part => part.trim());
+        const houseNumber = addressParts[0] || '';
+        const street = addressParts[1] || '';
+        const village = addressParts[2] || '';
+        const district = addressParts[3] || '';
+        const statePart = addressParts[4] || '';
+        const country = addressParts[5] || '';
+        const pincode = addressParts[6] || '';
         
-        /* 
-        const { error } = await supabase
+        // Create new hospital in Supabase
+        const { data, error } = await supabase
           .from('hospitals')
           .insert([{ 
-            name: hospitalName, 
-            email: emailId, 
-            mobile, 
-            license_number: licenseNumber, 
-            // ... other fields 
-          }]);
+            name: hospitalName,
+            email: emailId,
+            mobile: mobile,
+            license_number: licenseNumber,
+            house_number: houseNumber,
+            street: street,
+            village: village,
+            district: district,
+            state: statePart,
+            country: country,
+            pincode: pincode,
+            type: type,
+            speciality: type === 'specialty' ? speciality : null,
+            number_of_icus: numberOfICUs,
+            number_of_op_rooms: numberOfOPRooms,
+            number_of_doctors: numberOfDoctors,
+            password: password // Store the password in the database
+          }])
+          .select();
           
-        if (error) throw error;
-        */
+        if (error) {
+          console.error("Error creating hospital:", error);
+          throw error;
+        }
+        
+        console.log("Created hospital:", data);
+        
+        // Send welcome email with credentials
+        if (data && data.length > 0) {
+          const emailSent = await sendWelcomeEmail(emailId, hospitalName, password);
+          if (!emailSent) {
+            console.warn("Email not sent, but hospital was created");
+          }
+        }
+        
+        // Refresh hospitals list
+        fetchHospitals();
         
         toast({
           title: "Success",
@@ -281,7 +331,7 @@ const Hospitals: React.FC = () => {
       console.error("Error saving hospital:", error);
       toast({
         title: "Error",
-        description: "Failed to save hospital",
+        description: "Failed to save hospital: " + (error as Error).message,
         variant: "destructive",
       });
     }

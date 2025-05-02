@@ -28,10 +28,10 @@ const HospitalHome: React.FC = () => {
             // Transform the data to match our Hospital model
             const transformedHospital: Hospital = {
               hospitalId: data.id,
-              hospitalName: data.name || '',
-              emailId: data.email || '',
-              mobile: data.mobile_number || '',
-              hospitalLicenseNumber: data.license_number || '',
+              hospitalName: data.name,
+              emailId: data.email,
+              mobile: data.mobile, // Fixed: using mobile instead of mobile_number
+              hospitalLicenseNumber: data.license_number,
               hospitalHouseNumber: data.house_number || '',
               hospitalStreet: data.street || '',
               hospitalVillage: data.village || '',
@@ -39,7 +39,7 @@ const HospitalHome: React.FC = () => {
               hospitalState: data.state || '',
               hospitalCountry: data.country || '',
               hospitalPincode: data.pincode || '',
-              type: data.type as "general" | "specialty" || "general",
+              type: data.type || 'general',
               speciality: data.speciality,
               numberOfICUs: data.number_of_icus || 0,
               numberOfOPRooms: data.number_of_op_rooms || 0,
@@ -69,7 +69,7 @@ const HospitalHome: React.FC = () => {
     return (
       <AuthenticatedLayout requiredUserType="hospital">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Hospital Profile</h1>
+          <h1 className="text-2xl font-bold mb-6">My Profile</h1>
           <div className="bg-white rounded-lg shadow p-6">
             <div className="space-y-4">
               <Skeleton className="h-8 w-1/3" />
@@ -87,7 +87,7 @@ const HospitalHome: React.FC = () => {
     return (
       <AuthenticatedLayout requiredUserType="hospital">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Hospital Profile</h1>
+          <h1 className="text-2xl font-bold mb-6">My Profile</h1>
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-red-500">Failed to load hospital details. Please try again later.</p>
           </div>
@@ -99,7 +99,7 @@ const HospitalHome: React.FC = () => {
   return (
     <AuthenticatedLayout requiredUserType="hospital">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Hospital Profile</h1>
+        <h1 className="text-2xl font-bold mb-6">My Profile</h1>
         
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-6">
@@ -115,14 +115,19 @@ const HospitalHome: React.FC = () => {
                   <p><span className="font-medium">Mobile Number:</span> {hospital.mobile}</p>
                   <p><span className="font-medium">License Number:</span> {hospital.hospitalLicenseNumber}</p>
                   <p><span className="font-medium">Type:</span> {hospital.type}</p>
-                  {hospital.type === "specialty" && (
-                    <p><span className="font-medium">Speciality:</span> {hospital.speciality}</p>
-                  )}
+                  {hospital.type === 'specialty' && <p><span className="font-medium">Speciality:</span> {hospital.speciality}</p>}
                 </div>
               </div>
               
               <div>
-                <h3 className="font-medium text-gray-700">Address</h3>
+                <h3 className="font-medium text-gray-700">Facilities</h3>
+                <div className="mt-2 space-y-2">
+                  <p><span className="font-medium">Number of ICUs:</span> {hospital.numberOfICUs}</p>
+                  <p><span className="font-medium">Number of OP Rooms:</span> {hospital.numberOfOPRooms}</p>
+                  <p><span className="font-medium">Number of Doctors:</span> {hospital.numberOfDoctors}</p>
+                </div>
+                
+                <h3 className="font-medium text-gray-700 mt-4">Address</h3>
                 <div className="mt-2 space-y-2">
                   <p><span className="font-medium">House Number:</span> {hospital.hospitalHouseNumber}</p>
                   <p><span className="font-medium">Street:</span> {hospital.hospitalStreet}</p>
@@ -132,27 +137,6 @@ const HospitalHome: React.FC = () => {
                   <p><span className="font-medium">Country:</span> {hospital.hospitalCountry}</p>
                   <p><span className="font-medium">PIN Code:</span> {hospital.hospitalPincode}</p>
                 </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-rapidcare-primary mb-4">Facilities</h2>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-medium text-gray-700">ICUs</h3>
-                <p className="text-2xl font-bold text-rapidcare-primary mt-2">{hospital.numberOfICUs}</p>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-medium text-gray-700">OP Rooms</h3>
-                <p className="text-2xl font-bold text-rapidcare-primary mt-2">{hospital.numberOfOPRooms}</p>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-medium text-gray-700">Doctors</h3>
-                <p className="text-2xl font-bold text-rapidcare-primary mt-2">{hospital.numberOfDoctors}</p>
               </div>
             </div>
           </div>

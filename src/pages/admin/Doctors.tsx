@@ -161,6 +161,11 @@ const Doctors: React.FC = () => {
     }
   };
 
+  const validateEmail = (email: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email.toLowerCase());
+  };
+
   const sendWelcomeEmail = async (email: string, name: string, password: string) => {
     try {
       setSendingEmail(true);
@@ -212,6 +217,16 @@ const Doctors: React.FC = () => {
       return;
     }
 
+    // Validate email format
+    if (!validateEmail(email)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (dialogMode === 'create') {
         // Generate a password for the new doctor
@@ -236,7 +251,7 @@ const Doctors: React.FC = () => {
             clinic_state: "State",
             clinic_country: "Country",
             clinic_pincode: "12345",
-            password // In a real implementation, this would be hashed
+            password // Important: Store the password in the database
           }])
           .select();
           
