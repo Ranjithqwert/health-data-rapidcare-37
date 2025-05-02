@@ -67,8 +67,8 @@ export interface User {
   smoke: "Yes" | "No";
   alcohol: "Yes" | "No";
   inTreatment: "Yes" | "No";
-  height: number;
-  weight: number;
+  height: number; // Matches height_cm in the database
+  weight: number; // Matches weight_kg in the database
   bmi: number; // Calculated field
   obesityLevel: "Low" | "Correct" | "High"; // Calculated field
   houseNumber: string;

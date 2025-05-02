@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { supabase, generatePassword } from "@/integrations/supabase/client";
@@ -146,9 +147,9 @@ const Users: React.FC = () => {
         smoke: user.smoke ? "Yes" : "No",
         alcohol: user.alcohol ? "Yes" : "No",
         inTreatment: user.in_treatment ? "Yes" : "No",
-        // These fields may have different names in the DB compared to our model
-        height: user.height || 0,
-        weight: user.weight || 0,
+        // Fix the field names to match what's in the database
+        height: user.height_cm || 0, // Changed from height to height_cm
+        weight: user.weight_kg || 0, // Changed from weight to weight_kg
         bmi: user.bmi || 0,
         obesityLevel: user.obesity_level as "Low" | "Correct" | "High" || "Correct",
         houseNumber: user.house_number || '',
@@ -344,7 +345,7 @@ const Users: React.FC = () => {
         // Create new user in Supabase - fix the field mapping
         const { data, error } = await supabase
           .from('patients')
-          .insert({
+          .insert([{
             name,
             email,
             mobile_number: mobile,
@@ -356,8 +357,8 @@ const Users: React.FC = () => {
             state,
             country,
             pincode,
-            height,
-            weight,
+            height_cm: height, // Changed from height to height_cm
+            weight_kg: weight, // Changed from weight to weight_kg
             bmi,
             obesity_level: obesity,
             // Convert "Yes"/"No" strings to boolean for the database
@@ -378,7 +379,7 @@ const Users: React.FC = () => {
             in_treatment: inTreatment === "Yes",
             password, // Store the password in the database
             created_at: new Date().toISOString()
-          })
+          }])
           .select();
           
         if (error) {
@@ -421,8 +422,8 @@ const Users: React.FC = () => {
             state,
             country,
             pincode,
-            height,
-            weight,
+            height_cm: height, // Changed from height to height_cm
+            weight_kg: weight, // Changed from weight to weight_kg
             bmi,
             obesity_level: obesity,
             // Convert "Yes"/"No" strings to boolean for the database
