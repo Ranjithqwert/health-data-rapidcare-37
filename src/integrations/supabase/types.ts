@@ -165,6 +165,7 @@ export type Database = {
           id: string
           mobile_number: string
           name: string
+          password: string | null
           speciality: string
           user_id: string | null
         }
@@ -183,6 +184,7 @@ export type Database = {
           id?: string
           mobile_number: string
           name: string
+          password?: string | null
           speciality: string
           user_id?: string | null
         }
@@ -201,6 +203,7 @@ export type Database = {
           id?: string
           mobile_number?: string
           name?: string
+          password?: string | null
           speciality?: string
           user_id?: string | null
         }
@@ -220,15 +223,16 @@ export type Database = {
           created_at: string
           district: string | null
           email: string
-          house_number: string | null
+          house_number: number | null
           id: string
           license_number: string
-          mobile: string
+          mobile: number
           name: string
           number_of_doctors: number
           number_of_icus: number
           number_of_op_rooms: number
-          pincode: string | null
+          password: string | null
+          pincode: number | null
           speciality: string | null
           state: string | null
           street: string | null
@@ -241,15 +245,16 @@ export type Database = {
           created_at?: string
           district?: string | null
           email: string
-          house_number?: string | null
+          house_number?: number | null
           id?: string
           license_number: string
-          mobile: string
+          mobile: number
           name: string
           number_of_doctors?: number
           number_of_icus?: number
           number_of_op_rooms?: number
-          pincode?: string | null
+          password?: string | null
+          pincode?: number | null
           speciality?: string | null
           state?: string | null
           street?: string | null
@@ -262,15 +267,16 @@ export type Database = {
           created_at?: string
           district?: string | null
           email?: string
-          house_number?: string | null
+          house_number?: number | null
           id?: string
           license_number?: string
-          mobile?: string
+          mobile?: number
           name?: string
           number_of_doctors?: number
           number_of_icus?: number
           number_of_op_rooms?: number
-          pincode?: string | null
+          password?: string | null
+          pincode?: number | null
           speciality?: string | null
           state?: string | null
           street?: string | null
@@ -334,6 +340,7 @@ export type Database = {
           mobile_number: string
           name: string
           obesity_level: string | null
+          password: string | null
           pincode: string | null
           smoke: boolean | null
           state: string | null
@@ -370,6 +377,7 @@ export type Database = {
           mobile_number: string
           name: string
           obesity_level?: string | null
+          password?: string | null
           pincode?: string | null
           smoke?: boolean | null
           state?: string | null
@@ -406,6 +414,7 @@ export type Database = {
           mobile_number?: string
           name?: string
           obesity_level?: string | null
+          password?: string | null
           pincode?: string | null
           smoke?: boolean | null
           state?: string | null
