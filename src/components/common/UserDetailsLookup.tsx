@@ -136,7 +136,7 @@ const UserDetailsLookup: React.FC<UserDetailsLookupProps> = ({ userType }) => {
           value={userId}
           onChange={e => setUserId(e.target.value)}
           className="flex-1"
-          maxLength={10}
+        
         />
         <Button 
           onClick={handleLookup}
