@@ -1,4 +1,3 @@
-
 import { apiService } from "./api.service";
 import { LoginRequest, ResetPasswordRequest, LoginResponse } from "@/models/models";
 import { toast } from "@/components/ui/use-toast";
@@ -228,8 +227,7 @@ class AuthService {
       const { data: existingOtp, error: selectError } = await supabase
         .from('otps')
         .select()
-        .eq('user_id', userId)
-        .eq('user_type', userType)
+        .eq('id', userId) // Using id directly since we don't have user_id field
         .maybeSingle();
       
       if (selectError) {
@@ -242,11 +240,10 @@ class AuthService {
         const { error: updateError } = await supabase
           .from('otps')
           .update({
-            otp_code: otp,
-            expires_at: expiresAt.toISOString()
+            otp_value: otp, // Changed from otp_code to otp_value
+            validity: expiresAt.toISOString() // Changed from expires_at to validity
           })
-          .eq('user_id', userId)
-          .eq('user_type', userType);
+          .eq('id', userId);
           
         if (updateError) {
           console.error("Error updating OTP:", updateError);
@@ -257,10 +254,10 @@ class AuthService {
         const { error: insertError } = await supabase
           .from('otps')
           .insert({
-            user_id: userId,
-            user_type: userType,
-            otp_code: otp,
-            expires_at: expiresAt.toISOString()
+            id: userId, // Use the userId as the id
+            otp_value: otp, // Changed from otp_code to otp_value
+            validity: expiresAt.toISOString(), // Changed from expires_at to validity
+            expired: false
           });
           
         if (insertError) {
@@ -295,9 +292,8 @@ class AuthService {
       // Get the stored OTP for this user
       const { data, error } = await supabase
         .from('otps')
-        .select('otp_code, expires_at')
-        .eq('user_id', userId)
-        .eq('user_type', userType)
+        .select('otp_value, validity') // Changed from otp_code, expires_at
+        .eq('id', userId) // Using id directly
         .maybeSingle();
       
       if (error || !data) {
@@ -312,7 +308,7 @@ class AuthService {
       
       // Check if OTP is expired
       const now = new Date();
-      const expiresAt = new Date(data.expires_at);
+      const expiresAt = new Date(data.validity); // Changed from expires_at to validity
       
       if (now > expiresAt) {
         toast({
@@ -324,7 +320,7 @@ class AuthService {
       }
       
       // Check if OTP matches
-      if (data.otp_code === otp) {
+      if (data.otp_value === otp) { // Changed from otp_code to otp_value
         toast({
           title: "OTP Verified",
           description: "OTP verification successful.",

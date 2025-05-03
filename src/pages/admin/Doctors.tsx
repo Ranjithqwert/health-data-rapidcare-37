@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { generatePassword, sendWelcomeEmail } from "@/utils/email-utils";
+import { generatePassword } from "@/utils/email-utils";
+import { sendWelcomeEmail } from "@/utils/email-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Doctor } from "@/models/models";
@@ -90,7 +91,7 @@ const Doctors: React.FC = () => {
         mobileNumber: doc.mobile_number,
         email: doc.email, // This is the email property
         dateOfBirth: doc.dob,
-        hospital: doc.hospital_id, // This would need to be replaced with the actual hospital name
+        hospital: doc.hospital, // Changed from hospital_id to hospital
         speciality: doc.speciality,
         clinicHouseNumber: doc.clinic_house_number || '',
         clinicStreet: doc.clinic_street || '',
@@ -238,12 +239,12 @@ const Doctors: React.FC = () => {
         // Create new doctor in Supabase
         const { data, error } = await supabase
           .from('doctors')
-          .insert([{ 
+          .insert({ 
             name, 
             mobile_number: mobileNumber,
             email,
             dob, 
-            hospital_id: hospital, 
+            hospital, // Changed from hospital_id to hospital
             speciality,
             // Extract address fields from the combined address
             clinic_house_number: "123", // This would need proper parsing in a real implementation
@@ -254,7 +255,7 @@ const Doctors: React.FC = () => {
             clinic_country: "Country",
             clinic_pincode: "12345",
             password // Important: Store the password in the database
-          }])
+          })
           .select();
           
         if (error) {
@@ -290,7 +291,7 @@ const Doctors: React.FC = () => {
             mobile_number: mobileNumber,
             email,
             dob, 
-            hospital_id: hospital, 
+            hospital, // Changed from hospital_id to hospital 
             speciality,
             // Update address fields would be handled properly in a real app
           })

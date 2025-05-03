@@ -12,7 +12,7 @@ export interface Doctor {
   mobileNumber: string;
   email?: string;
   dateOfBirth: string;
-  hospital: string;
+  hospital: string; // Changed from hospital_id to hospital
   speciality: string;
   clinicHouseNumber: string;
   clinicStreet: string;
@@ -86,8 +86,8 @@ export interface User {
 
 export interface OTP {
   id: string;
-  otpValue: string;
-  validity: string; // DateTime
+  otpValue: string;  // Changed from otpCode to match DB schema
+  validity: string;  // Changed from expiresAt to match DB schema
   expired: boolean;
 }
 

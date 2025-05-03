@@ -32,7 +32,7 @@ const DoctorHome: React.FC = () => {
               mobileNumber: data.mobile_number || '',
               email: data.email || '',
               dateOfBirth: data.dob || '',
-              hospital: data.hospital_id || '',
+              hospital: data.hospital || '', // Changed from hospital_id to hospital
               speciality: data.speciality || '',
               clinicHouseNumber: data.clinic_house_number || '',
               clinicStreet: data.clinic_street || '',

@@ -252,13 +252,26 @@ const Consultations: React.FC = () => {
 
     try {
       const formattedDate = format(date, "yyyy-MM-dd");
+      const doctorName = authService.getUserName() || "Doctor";
       
-      // Create the consultation record
+      // Get patient name for the record
+      const { data: patientData, error: patientError } = await supabase
+        .from('patients')
+        .select('name')
+        .eq('id', patientId)
+        .single();
+        
+      if (patientError) throw patientError;
+      if (!patientData) throw new Error("Patient not found");
+
+      // Create the consultation record with all required fields
       const { data, error } = await supabase
         .from('consultations')
         .insert({
           patient_id: patientId,
+          patient_name: patientData.name,
           doctor_id: doctorId,
+          doctor_name: doctorName,
           consultation_date: formattedDate,
           consultation_time: time,
           place: place,
