@@ -28,7 +28,7 @@ class AuthService {
   }
 
   // Generate a unique 10-digit ID
-  async generateUniqueId(tableName: string): Promise<string> {
+  async generateUniqueId(tableName: "admins" | "admission_reports" | "admissions" | "hospitals" | "patients" | "consultations" | "doctors" | "otps"): Promise<string> {
     let isUnique = false;
     let newId = '';
     
@@ -77,7 +77,7 @@ class AuthService {
         }
       } else {
         // For other user types, query the appropriate table
-        let tableName;
+        let tableName: "doctors" | "hospitals" | "patients";
         switch (request.userType) {
           case 'doctor': tableName = 'doctors'; break;
           case 'hospital': tableName = 'hospitals'; break;
@@ -118,9 +118,11 @@ class AuthService {
             return { success: false, error: 'User not found' };
           }
           
+          // Type-safe access to password with explicit checks
+          const password = data?.password;
+          
           // In a real application, you would verify the password here using bcrypt
-          // For now we're doing a simple comparison
-          if (data.password !== request.password) {
+          if (typeof password !== 'string' || password !== request.password) {
             return { success: false, error: 'Invalid password' };
           }
           
@@ -196,7 +198,7 @@ class AuthService {
   async sendOTP(userId: string, userType: 'doctor' | 'hospital' | 'user'): Promise<boolean> {
     try {
       // Get the user's email based on userType
-      let tableName;
+      let tableName: "doctors" | "hospitals" | "patients";
       
       switch (userType) {
         case 'doctor': tableName = 'doctors'; break;
@@ -403,7 +405,7 @@ class AuthService {
   async resetPassword(request: ResetPasswordRequest): Promise<boolean> {
     try {
       // Update password in the appropriate table
-      let tableName;
+      let tableName: "doctors" | "hospitals" | "patients";
       
       switch (request.userType) {
         case 'doctor': tableName = 'doctors'; break;
@@ -481,7 +483,7 @@ class AuthService {
       return null;
     }
     
-    let tableName;
+    let tableName: "doctors" | "hospitals" | "patients";
     switch (userType) {
       case 'doctor': tableName = 'doctors'; break;
       case 'hospital': tableName = 'hospitals'; break;
