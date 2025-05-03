@@ -9,22 +9,43 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admins: {
+        Row: {
+          created_at: string | null
+          id: string
+          password: string
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          password: string
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          password?: string
+          username?: string
+        }
+        Relationships: []
+      }
       admission_reports: {
         Row: {
           admission_id: string
-          created_at: string
+          created_at: string | null
           id: string
           report_link: string
         }
         Insert: {
           admission_id: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           report_link: string
         }
         Update: {
           admission_id?: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           report_link?: string
         }
@@ -40,40 +61,46 @@ export type Database = {
       }
       admissions: {
         Row: {
-          created_at: string
+          created_at: string | null
           date_in: string
           date_out: string | null
           discharged: boolean | null
           feedback: string | null
           hospital_id: string
+          hospital_name: string
           id: string
           patient_id: string
+          patient_name: string
           recovered: boolean | null
           time_in: string
           time_out: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           date_in: string
           date_out?: string | null
           discharged?: boolean | null
           feedback?: string | null
           hospital_id: string
+          hospital_name: string
           id?: string
           patient_id: string
+          patient_name: string
           recovered?: boolean | null
           time_in: string
           time_out?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           date_in?: string
           date_out?: string | null
           discharged?: boolean | null
           feedback?: string | null
           hospital_id?: string
+          hospital_name?: string
           id?: string
           patient_id?: string
+          patient_name?: string
           recovered?: boolean | null
           time_in?: string
           time_out?: string | null
@@ -99,10 +126,12 @@ export type Database = {
         Row: {
           consultation_date: string
           consultation_time: string
-          created_at: string
+          created_at: string | null
           doctor_id: string
+          doctor_name: string
           id: string
           patient_id: string
+          patient_name: string
           place: string
           place_id: string | null
           prescription: string | null
@@ -111,10 +140,12 @@ export type Database = {
         Insert: {
           consultation_date: string
           consultation_time: string
-          created_at?: string
+          created_at?: string | null
           doctor_id: string
+          doctor_name: string
           id?: string
           patient_id: string
+          patient_name: string
           place: string
           place_id?: string | null
           prescription?: string | null
@@ -123,10 +154,12 @@ export type Database = {
         Update: {
           consultation_date?: string
           consultation_time?: string
-          created_at?: string
+          created_at?: string | null
           doctor_id?: string
+          doctor_name?: string
           id?: string
           patient_id?: string
+          patient_name?: string
           place?: string
           place_id?: string | null
           prescription?: string | null
@@ -151,165 +184,148 @@ export type Database = {
       }
       doctors: {
         Row: {
-          clinic_country: string | null
-          clinic_district: string | null
-          clinic_house_number: string | null
-          clinic_pincode: string | null
-          clinic_state: string | null
-          clinic_street: string | null
-          clinic_village: string | null
-          created_at: string
+          clinic_country: string
+          clinic_district: string
+          clinic_house_number: string
+          clinic_pincode: string
+          clinic_state: string
+          clinic_street: string
+          clinic_village: string
+          created_at: string | null
           dob: string
-          email: string
-          hospital_id: string | null
+          email: string | null
+          hospital: string
           id: string
           mobile_number: string
           name: string
-          password: string | null
+          password: string
           speciality: string
-          user_id: string | null
         }
         Insert: {
-          clinic_country?: string | null
-          clinic_district?: string | null
-          clinic_house_number?: string | null
-          clinic_pincode?: string | null
-          clinic_state?: string | null
-          clinic_street?: string | null
-          clinic_village?: string | null
-          created_at?: string
+          clinic_country: string
+          clinic_district: string
+          clinic_house_number: string
+          clinic_pincode: string
+          clinic_state: string
+          clinic_street: string
+          clinic_village: string
+          created_at?: string | null
           dob: string
-          email: string
-          hospital_id?: string | null
+          email?: string | null
+          hospital: string
           id?: string
           mobile_number: string
           name: string
-          password?: string | null
+          password: string
           speciality: string
-          user_id?: string | null
         }
         Update: {
-          clinic_country?: string | null
-          clinic_district?: string | null
-          clinic_house_number?: string | null
-          clinic_pincode?: string | null
-          clinic_state?: string | null
-          clinic_street?: string | null
-          clinic_village?: string | null
-          created_at?: string
+          clinic_country?: string
+          clinic_district?: string
+          clinic_house_number?: string
+          clinic_pincode?: string
+          clinic_state?: string
+          clinic_street?: string
+          clinic_village?: string
+          created_at?: string | null
           dob?: string
-          email?: string
-          hospital_id?: string | null
+          email?: string | null
+          hospital?: string
           id?: string
           mobile_number?: string
           name?: string
-          password?: string | null
+          password?: string
           speciality?: string
-          user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "doctors_hospital_id_fkey"
-            columns: ["hospital_id"]
-            isOneToOne: false
-            referencedRelation: "hospitals"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       hospitals: {
         Row: {
-          country: string | null
-          created_at: string
-          district: string | null
+          country: string
+          created_at: string | null
+          district: string
           email: string
-          house_number: number | null
+          house_number: string
           id: string
           license_number: string
-          mobile: number
+          mobile: string
           name: string
           number_of_doctors: number
           number_of_icus: number
           number_of_op_rooms: number
-          password: string | null
-          pincode: number | null
+          password: string
+          pincode: string
           speciality: string | null
-          state: string | null
-          street: string | null
+          state: string
+          street: string
           type: string
-          user_id: string | null
-          village: string | null
+          village: string
         }
         Insert: {
-          country?: string | null
-          created_at?: string
-          district?: string | null
+          country: string
+          created_at?: string | null
+          district: string
           email: string
-          house_number?: number | null
+          house_number: string
           id?: string
           license_number: string
-          mobile: number
+          mobile: string
           name: string
           number_of_doctors?: number
           number_of_icus?: number
           number_of_op_rooms?: number
-          password?: string | null
-          pincode?: number | null
+          password: string
+          pincode: string
           speciality?: string | null
-          state?: string | null
-          street?: string | null
+          state: string
+          street: string
           type: string
-          user_id?: string | null
-          village?: string | null
+          village: string
         }
         Update: {
-          country?: string | null
-          created_at?: string
-          district?: string | null
+          country?: string
+          created_at?: string | null
+          district?: string
           email?: string
-          house_number?: number | null
+          house_number?: string
           id?: string
           license_number?: string
-          mobile?: number
+          mobile?: string
           name?: string
           number_of_doctors?: number
           number_of_icus?: number
           number_of_op_rooms?: number
-          password?: string | null
-          pincode?: number | null
+          password?: string
+          pincode?: string
           speciality?: string | null
-          state?: string | null
-          street?: string | null
+          state?: string
+          street?: string
           type?: string
-          user_id?: string | null
-          village?: string | null
+          village?: string
         }
         Relationships: []
       }
       otps: {
         Row: {
           created_at: string | null
-          expires_at: string
+          expired: boolean | null
           id: string
-          otp_code: string
-          user_id: string
-          user_type: string
+          otp_value: string
+          validity: string
         }
         Insert: {
           created_at?: string | null
-          expires_at: string
+          expired?: boolean | null
           id?: string
-          otp_code: string
-          user_id: string
-          user_type: string
+          otp_value: string
+          validity: string
         }
         Update: {
           created_at?: string | null
-          expires_at?: string
+          expired?: boolean | null
           id?: string
-          otp_code?: string
-          user_id?: string
-          user_type?: string
+          otp_value?: string
+          validity?: string
         }
         Relationships: []
       }
@@ -323,7 +339,10 @@ export type Database = {
           cardiac: boolean | null
           cardiac_info: string | null
           country: string | null
-          created_at: string
+          created_at: string | null
+          created_date: string | null
+          created_month: string | null
+          created_year: string | null
           district: string | null
           dob: string
           email: string
@@ -340,14 +359,13 @@ export type Database = {
           mobile_number: string
           name: string
           obesity_level: string | null
-          password: string | null
+          password: string
           pincode: string | null
           smoke: boolean | null
           state: string | null
           street: string | null
           sugar: boolean | null
           sugar_level: string | null
-          user_id: string | null
           village: string | null
           weight_kg: number | null
         }
@@ -360,7 +378,10 @@ export type Database = {
           cardiac?: boolean | null
           cardiac_info?: string | null
           country?: string | null
-          created_at?: string
+          created_at?: string | null
+          created_date?: string | null
+          created_month?: string | null
+          created_year?: string | null
           district?: string | null
           dob: string
           email: string
@@ -377,14 +398,13 @@ export type Database = {
           mobile_number: string
           name: string
           obesity_level?: string | null
-          password?: string | null
+          password: string
           pincode?: string | null
           smoke?: boolean | null
           state?: string | null
           street?: string | null
           sugar?: boolean | null
           sugar_level?: string | null
-          user_id?: string | null
           village?: string | null
           weight_kg?: number | null
         }
@@ -397,7 +417,10 @@ export type Database = {
           cardiac?: boolean | null
           cardiac_info?: string | null
           country?: string | null
-          created_at?: string
+          created_at?: string | null
+          created_date?: string | null
+          created_month?: string | null
+          created_year?: string | null
           district?: string | null
           dob?: string
           email?: string
@@ -414,43 +437,15 @@ export type Database = {
           mobile_number?: string
           name?: string
           obesity_level?: string | null
-          password?: string | null
+          password?: string
           pincode?: string | null
           smoke?: boolean | null
           state?: string | null
           street?: string | null
           sugar?: boolean | null
           sugar_level?: string | null
-          user_id?: string | null
           village?: string | null
           weight_kg?: number | null
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          created_at: string
-          email: string | null
-          id: string
-          mobile_number: string | null
-          name: string | null
-          role: string
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          id: string
-          mobile_number?: string | null
-          name?: string | null
-          role: string
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          id?: string
-          mobile_number?: string | null
-          name?: string | null
-          role?: string
         }
         Relationships: []
       }

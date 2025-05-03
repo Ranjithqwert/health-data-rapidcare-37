@@ -76,6 +76,17 @@ const NewAdmissionForm = ({ onAdmissionCreated }: { onAdmissionCreated: () => vo
         throw new Error("Hospital ID not found");
       }
 
+      // Get hospital name for the record
+      const { data: hospitalData, error: hospitalError } = await supabase
+        .from('hospitals')
+        .select('name')
+        .eq('id', hospitalId)
+        .single();
+        
+      if (hospitalError) throw hospitalError;
+      if (!hospitalData) throw new Error("Hospital not found");
+      
+      const hospitalName = hospitalData.name;
       const currentDate = format(new Date(), "yyyy-MM-dd");
       const currentTime = format(new Date(), "HH:mm:ss");
 
@@ -83,7 +94,9 @@ const NewAdmissionForm = ({ onAdmissionCreated }: { onAdmissionCreated: () => vo
         .from('admissions')
         .insert({
           patient_id: patientId,
+          patient_name: patientDetails.name,
           hospital_id: hospitalId,
+          hospital_name: hospitalName,
           date_in: currentDate,
           time_in: currentTime,
           discharged: false

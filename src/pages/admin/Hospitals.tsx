@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { generatePassword, sendWelcomeEmail } from "@/utils/email-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Hospital } from "@/models/models";
@@ -12,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import { generatePassword, sendWelcomeEmail } from "@/utils/email-utils";
 
 const Hospitals: React.FC = () => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
@@ -266,7 +266,7 @@ const Hospitals: React.FC = () => {
           .update({ 
             name: hospitalName, 
             email: emailId, 
-            mobile, 
+            mobile: mobile, 
             license_number: licenseNumber,
             house_number: houseNumber,
             street: street,
