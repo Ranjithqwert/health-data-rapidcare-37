@@ -16,6 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Consultation {
   id: string;
@@ -127,22 +128,29 @@ const Consultations: React.FC = () => {
       
       // If there's a file, upload it to Supabase Storage
       if (prescriptionFile) {
-        const fileExt = prescriptionFile.name.split('.').pop();
-        const fileName = `${Date.now()}-prescription.${fileExt}`;
-        
-        // Create bucket if it doesn't exist (you'll need to add RLS policies for this to work)
-        const { data: bucketExists } = await supabase.storage.getBucket('prescriptions');
-        if (!bucketExists) {
+        // Create bucket if needed
+        try {
           await supabase.storage.createBucket('prescriptions', {
             public: false,
             fileSizeLimit: 10485760 // 10MB
           });
+        } catch (err) {
+          // Bucket may already exist, which is fine
+          console.log("Bucket may already exist:", err);
         }
+        
+        // Prepare a unique file name
+        const fileExt = prescriptionFile.name.split('.').pop();
+        const fileName = `${Date.now()}-prescription.${fileExt}`;
+        const filePath = `${selectedConsultation.id}/${fileName}`;
         
         // Upload the file
         const { error: uploadError, data } = await supabase.storage
           .from('prescriptions')
-          .upload(`${selectedConsultation.id}/${fileName}`, prescriptionFile);
+          .upload(filePath, prescriptionFile, {
+            cacheControl: '3600',
+            upsert: true
+          });
           
         if (uploadError) {
           throw uploadError;
@@ -151,7 +159,7 @@ const Consultations: React.FC = () => {
         // Get the public URL
         const { data: { publicUrl } } = supabase.storage
           .from('prescriptions')
-          .getPublicUrl(`${selectedConsultation.id}/${fileName}`);
+          .getPublicUrl(filePath);
           
         reportLink = publicUrl;
       }
@@ -180,7 +188,7 @@ const Consultations: React.FC = () => {
       console.error("Error saving prescription:", error);
       toast({
         title: "Error",
-        description: "Failed to save prescription",
+        description: "Failed to save prescription. Please try again.",
         variant: "destructive",
       });
     }
@@ -357,7 +365,7 @@ const Consultations: React.FC = () => {
         
         {/* Prescription Dialog */}
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>
                 {selectedConsultation?.prescription ? "Edit Prescription" : "Add Prescription"}
@@ -391,8 +399,28 @@ const Consultations: React.FC = () => {
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Supported formats: PDF, DOC, DOCX, JPG, JPEG, PNG
+                    Supported formats: PDF, DOC, DOCX, JPG, JPEG, PNG (Max 10MB)
                   </p>
+                  
+                  {/* Display file name if selected */}
+                  {prescriptionFile && (
+                    <Alert className="mt-2">
+                      <AlertDescription>
+                        Selected file: {prescriptionFile.name} ({Math.round(prescriptionFile.size / 1024)} KB)
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Display existing file if available */}
+                  {selectedConsultation?.report_link && !prescriptionFile && (
+                    <Alert className="mt-2">
+                      <AlertDescription>
+                        <a href={selectedConsultation.report_link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                          View uploaded prescription file
+                        </a>
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               </div>
             </div>

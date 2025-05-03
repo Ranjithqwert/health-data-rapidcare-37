@@ -102,12 +102,23 @@ class AuthService {
         }
         
         try {
-          // Using maybeSingle() instead of single() to avoid errors with missing data
-          const { data, error } = await supabase
-            .from(tableName)
-            .select('id, name, email, mobile_number, password')
-            .eq('id', request.userId)
-            .maybeSingle();
+          // Select different fields based on user type to handle the mobile/mobile_number difference
+          let query;
+          if (request.userType === 'hospital') {
+            query = supabase
+              .from(tableName)
+              .select('id, name, email, mobile, password')
+              .eq('id', request.userId)
+              .maybeSingle();
+          } else {
+            query = supabase
+              .from(tableName)
+              .select('id, name, email, mobile_number, password')
+              .eq('id', request.userId)
+              .maybeSingle();
+          }
+          
+          const { data, error } = await query;
             
           if (error) {
             console.error("Supabase error:", error);
@@ -118,11 +129,8 @@ class AuthService {
             return { success: false, error: 'User not found' };
           }
           
-          // Type-safe access to password with explicit checks
-          const password = data?.password;
-          
-          // In a real application, you would verify the password here using bcrypt
-          if (typeof password !== 'string' || password !== request.password) {
+          // Safely check if password exists and matches
+          if (!('password' in data) || data.password !== request.password) {
             return { success: false, error: 'Invalid password' };
           }
           
@@ -151,8 +159,10 @@ class AuthService {
               userEmail = data.email;
             }
             
-            // Check if mobile_number exists
-            if ('mobile_number' in data && data.mobile_number !== null && typeof data.mobile_number === 'string') {
+            // Check if mobile_number or mobile exists based on user type
+            if (request.userType === 'hospital' && 'mobile' in data && data.mobile !== null && typeof data.mobile === 'string') {
+              userMobile = data.mobile;
+            } else if ('mobile_number' in data && data.mobile_number !== null && typeof data.mobile_number === 'string') {
               userMobile = data.mobile_number;
             }
           }
