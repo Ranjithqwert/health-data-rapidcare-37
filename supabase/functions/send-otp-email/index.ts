@@ -4,12 +4,11 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
-interface WelcomeEmailRequest {
+interface OTPEmailRequest {
   email: string;
-  name: string;
+  otp: string;
   userType: 'doctor' | 'hospital' | 'user';
-  password: string;
-  userId: string;
+  name: string;
 }
 
 serve(async (req) => {
@@ -20,7 +19,7 @@ serve(async (req) => {
 
   // Parse request body
   try {
-    const { email, name, userType, password, userId }: WelcomeEmailRequest = await req.json();
+    const { email, otp, userType, name }: OTPEmailRequest = await req.json();
 
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY not configured");
@@ -36,7 +35,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Attempting to send email to ${email} for ${userType} ${name} with password ${password}`);
+    console.log(`Attempting to send OTP email to ${email} for ${userType} ${name}`);
 
     // Send email with Resend API
     const response = await fetch("https://api.resend.com/emails", {
@@ -48,14 +47,13 @@ serve(async (req) => {
       body: JSON.stringify({
         from: "onboarding@resend.dev",
         to: email,
-        subject: "Welcome to Health Portal - Your Account Details",
+        subject: "Password Reset OTP - Health Portal",
         html: `
-          <h1>Welcome to Health Portal, ${name}!</h1>
-          <p>Your account has been created as a ${userType}.</p>
-          <p>Your login credentials:</p>
-          <p><strong>User ID:</strong> ${userId}</p>
-          <p><strong>Password:</strong> ${password}</p>
-          <p>Please change your password after your first login for security reasons.</p>
+          <h1>Health Portal Password Reset</h1>
+          <p>You have requested to reset your password for your ${userType} account.</p>
+          <p>Your One-Time Password (OTP) is:</p>
+          <h2 style="font-size: 24px; padding: 10px; background-color: #f0f0f0; text-align: center; letter-spacing: 5px;">${otp}</h2>
+          <p>This OTP is valid for 10 minutes. If you did not request this password reset, please ignore this email.</p>
           <p>Best regards,<br>Health Portal Team</p>
         `
       })
@@ -65,14 +63,14 @@ serve(async (req) => {
     console.log("Email sending result:", result);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Welcome email sent successfully", result }),
+      JSON.stringify({ success: true, message: "OTP email sent successfully", result }),
       { 
         status: 200, 
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       }
     );
   } catch (error) {
-    console.error("Error sending welcome email:", error);
+    console.error("Error sending OTP email:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 

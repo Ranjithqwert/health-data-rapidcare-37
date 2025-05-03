@@ -16,6 +16,14 @@ export const generatePassword = (length = 12) => {
 };
 
 /**
+ * Generates a random 10-digit ID that doesn't start with 0
+ */
+export const generate10DigitId = () => {
+  // Generate a random number between 1000000000 and 9999999999
+  return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+};
+
+/**
  * Sends a welcome email to a newly created user with their login credentials
  */
 export const sendWelcomeEmail = async (

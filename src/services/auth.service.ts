@@ -1,7 +1,9 @@
+
 import { apiService } from "./api.service";
 import { LoginRequest, ResetPasswordRequest, LoginResponse } from "@/models/models";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { generate10DigitId } from "@/utils/email-utils";
 
 class AuthService {
   // Check if user is logged in
@@ -25,13 +27,38 @@ class AuthService {
     return localStorage.getItem('userName');
   }
 
+  // Generate a unique 10-digit ID
+  async generateUniqueId(tableName: string): Promise<string> {
+    let isUnique = false;
+    let newId = '';
+    
+    while (!isUnique) {
+      newId = generate10DigitId();
+      
+      // Check if ID already exists
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('id')
+        .eq('id', newId)
+        .maybeSingle();
+        
+      if (error) {
+        console.error(`Error checking ID uniqueness: ${error.message}`);
+      }
+      
+      isUnique = !data; // If no data returned, ID is unique
+    }
+    
+    return newId;
+  }
+
   // Login
   async login(request: LoginRequest): Promise<LoginResponse> {
     try {
       // Different login logic for each user type
       if (request.userType === 'admin') {
         // For admin, use a special table or check
-        if (request.userId === 'admin' && request.password === 'admin') {
+        if (request.userId === 'admin' && request.password === 'admin123') {
           // Mock admin login for testing
           const token = 'admin-token-' + Date.now();
           localStorage.setItem('token', token);
@@ -74,12 +101,11 @@ class AuthService {
           };
         }
         
-        // In a real implementation, check the password against a hashed version in the database
         try {
           // Using maybeSingle() instead of single() to avoid errors with missing data
           const { data, error } = await supabase
             .from(tableName)
-            .select('id, name, email, mobile_number')
+            .select('id, name, email, mobile_number, password')
             .eq('id', request.userId)
             .maybeSingle();
             
@@ -92,8 +118,12 @@ class AuthService {
             return { success: false, error: 'User not found' };
           }
           
-          // In a real application, you would verify the password here
-          // For now, we're allowing any password for demonstration
+          // In a real application, you would verify the password here using bcrypt
+          // For now we're doing a simple comparison
+          if (data.password !== request.password) {
+            return { success: false, error: 'Invalid password' };
+          }
+          
           const token = `${request.userType}-token-${Date.now()}`;
           
           // Correctly extract values from the data object with proper type checking
@@ -240,8 +270,8 @@ class AuthService {
         const { error: updateError } = await supabase
           .from('otps')
           .update({
-            otp_value: otp, // Changed from otp_code to otp_value
-            validity: expiresAt.toISOString() // Changed from expires_at to validity
+            otp_value: otp,
+            validity: expiresAt.toISOString()
           })
           .eq('id', userId);
           
@@ -254,9 +284,9 @@ class AuthService {
         const { error: insertError } = await supabase
           .from('otps')
           .insert({
-            id: userId, // Use the userId as the id
-            otp_value: otp, // Changed from otp_code to otp_value
-            validity: expiresAt.toISOString(), // Changed from expires_at to validity
+            id: userId,
+            otp_value: otp,
+            validity: expiresAt.toISOString(),
             expired: false
           });
           
@@ -266,7 +296,31 @@ class AuthService {
         }
       }
       
-      // In a real application, send email with OTP
+      // Send email with OTP using our edge function
+      try {
+        const { error } = await supabase.functions.invoke('send-otp-email', {
+          body: {
+            email,
+            otp,
+            userType,
+            name: userId // We're using the user ID as name since we don't have it here
+          }
+        });
+        
+        if (error) {
+          console.error("Error sending OTP email:", error);
+          toast({
+            title: "Error",
+            description: "Failed to send OTP email. Please try again.",
+            variant: "destructive",
+          });
+          return false;
+        }
+      } catch (emailError) {
+        console.error("Failed to send OTP email:", emailError);
+        // We still continue as the OTP is stored in the database
+      }
+      
       console.log(`OTP for ${userType} with ID ${userId}: ${otp} (would be sent to ${email})`);
       
       toast({
@@ -292,8 +346,8 @@ class AuthService {
       // Get the stored OTP for this user
       const { data, error } = await supabase
         .from('otps')
-        .select('otp_value, validity') // Changed from otp_code, expires_at
-        .eq('id', userId) // Using id directly
+        .select('otp_value, validity') 
+        .eq('id', userId)
         .maybeSingle();
       
       if (error || !data) {
@@ -308,7 +362,7 @@ class AuthService {
       
       // Check if OTP is expired
       const now = new Date();
-      const expiresAt = new Date(data.validity); // Changed from expires_at to validity
+      const expiresAt = new Date(data.validity);
       
       if (now > expiresAt) {
         toast({
@@ -320,7 +374,7 @@ class AuthService {
       }
       
       // Check if OTP matches
-      if (data.otp_value === otp) { // Changed from otp_code to otp_value
+      if (data.otp_value === otp) {
         toast({
           title: "OTP Verified",
           description: "OTP verification successful.",
@@ -378,8 +432,7 @@ class AuthService {
       await supabase
         .from('otps')
         .delete()
-        .eq('user_id', request.userId)
-        .eq('user_type', request.userType);
+        .eq('id', request.userId);
       
       toast({
         title: "Password Reset",
@@ -420,7 +473,7 @@ class AuthService {
   }
 
   // Get current user details
-  async getCurrentUserDetails(): Promise<any> {
+  async getCurrentUserDetails() {
     const userId = this.getUserId();
     const userType = this.getUserType();
     

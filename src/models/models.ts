@@ -7,7 +7,7 @@ export interface Admin {
 }
 
 export interface Doctor {
-  doctorId: string;
+  doctorId: string; // This will be a 10-digit ID
   name: string;
   mobileNumber: string;
   email?: string;
@@ -25,7 +25,7 @@ export interface Doctor {
 }
 
 export interface Hospital {
-  hospitalId: string;
+  hospitalId: string; // This will be a 10-digit ID
   hospitalName: string;
   emailId: string;
   mobile: string;
@@ -46,7 +46,7 @@ export interface Hospital {
 }
 
 export interface User {
-  userId: string;
+  userId: string; // This will be a 10-digit ID
   name: string;
   mobileNumber: string;
   emailId: string;

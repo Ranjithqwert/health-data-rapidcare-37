@@ -2,326 +2,277 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/use-toast";
-import { apiService } from "@/services/api.service";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 import { User } from "@/models/models";
-import { authService } from "@/services/auth.service";
+import { booleanToYesNo } from "@/utils/email-utils";
 
 interface UserDetailsLookupProps {
   userType: 'doctor' | 'hospital';
 }
 
 const UserDetailsLookup: React.FC<UserDetailsLookupProps> = ({ userType }) => {
-  const [userId, setUserId] = useState("");
-  const [otp, setOtp] = useState("");
-  const [user, setUser] = useState<User | null>(null);
+  const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'userId' | 'otp' | 'details'>('userId');
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [consultations, setConsultations] = useState<any[]>([]);
+  const [admissions, setAdmissions] = useState<any[]>([]);
 
-  const handleSendOtp = async () => {
-    if (!userId) {
+  const handleLookup = async () => {
+    if (!userId.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a User ID",
+        description: "Please enter a valid user ID",
         variant: "destructive",
       });
       return;
     }
-    
-    setLoading(true);
-    
-    try {
-      const response = await apiService.forgotPassword({ 
-        userId, 
-        userType: "user" // We're not actually resetting a password, just using the OTP mechanism
-      });
-      
-      if (response.success) {
-        toast({
-          title: "OTP Sent",
-          description: "An OTP has been sent to the user's email for verification",
-        });
-        setStep('otp');
-      } else {
-        toast({
-          title: "Error",
-          description: response.error || "User not found",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Send OTP error:", error);
-      toast({
-        title: "Error",
-        description: "An error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleVerifyOtp = async () => {
-    if (!otp) {
-      toast({
-        title: "Error",
-        description: "Please enter the OTP",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setLoading(true);
-    
-    try {
-      const response = await apiService.verifyOtp({
-        userId,
-        otp,
-        userType: "user"
-      });
-      
-      if (response.success) {
-        // Fetch user details
-        const userDetails = await apiService.getUserDetails(userId);
-        
-        if (userDetails) {
-          setUser(userDetails);
-          setStep('details');
-          setDialogOpen(true);
-        } else {
-          toast({
-            title: "Error",
-            description: "Could not fetch user details",
-            variant: "destructive",
-          });
-        }
-      } else {
-        toast({
-          title: "Error",
-          description: response.error || "Invalid OTP",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Verify OTP error:", error);
-      toast({
-        title: "Error",
-        description: "An error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleReset = () => {
-    setUserId("");
-    setOtp("");
     setUser(null);
-    setStep('userId');
-    setDialogOpen(false);
-  };
+    setConsultations([]);
+    setAdmissions([]);
 
-  const renderUserDetails = () => {
-    if (!user) return null;
-    
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h3 className="font-medium text-gray-700">Personal Information</h3>
-            <div className="mt-2 space-y-2">
-              <p><span className="font-medium">Name:</span> {user.name}</p>
-              <p><span className="font-medium">Age:</span> {user.age}</p>
-              <p><span className="font-medium">Date of Birth:</span> {user.dateOfBirth}</p>
-              <p><span className="font-medium">Mobile:</span> {user.mobileNumber}</p>
-              <p><span className="font-medium">Email:</span> {user.emailId}</p>
-            </div>
-          </div>
-          
-          <div>
-            <h3 className="font-medium text-gray-700">Health Information</h3>
-            <div className="mt-2 space-y-2">
-              <p><span className="font-medium">Height:</span> {user.height} cm</p>
-              <p><span className="font-medium">Weight:</span> {user.weight} kg</p>
-              <p><span className="font-medium">BMI:</span> {user.bmi}</p>
-              <p><span className="font-medium">Obesity Level:</span> {user.obesityLevel}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div>
-          <h3 className="font-medium text-gray-700">Medical Conditions</h3>
-          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <p><span className="font-medium">Sugar:</span> {user.sugar}</p>
-              {user.sugar === "Yes" && (
-                <p><span className="font-medium">Sugar Level:</span> {user.sugarLevel}</p>
-              )}
-            </div>
-            
-            <div>
-              <p><span className="font-medium">BP:</span> {user.bp}</p>
-              {user.bp === "Yes" && (
-                <p><span className="font-medium">BP Level:</span> {user.bpLevel}</p>
-              )}
-            </div>
-            
-            <div>
-              <p><span className="font-medium">Cardiac:</span> {user.cardiac}</p>
-              {user.cardiac === "Yes" && (
-                <p><span className="font-medium">Cardiac Info:</span> {user.cardiacInfo}</p>
-              )}
-            </div>
-            
-            <div>
-              <p><span className="font-medium">Kidney:</span> {user.kidney}</p>
-              {user.kidney === "Yes" && (
-                <p><span className="font-medium">Kidney Info:</span> {user.kidneyInfo}</p>
-              )}
-            </div>
-            
-            <div>
-              <p><span className="font-medium">Liver:</span> {user.liver}</p>
-              {user.liver === "Yes" && (
-                <p><span className="font-medium">Liver Info:</span> {user.liverInfo}</p>
-              )}
-            </div>
-            
-            <div>
-              <p><span className="font-medium">Lungs:</span> {user.lungs}</p>
-              {user.lungs === "Yes" && (
-                <p><span className="font-medium">Lungs Info:</span> {user.lungsInfo}</p>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        <div>
-          <h3 className="font-medium text-gray-700">Lifestyle</h3>
-          <div className="mt-2 space-y-2">
-            <p><span className="font-medium">Smoke:</span> {user.smoke}</p>
-            <p><span className="font-medium">Alcohol:</span> {user.alcohol}</p>
-            <p><span className="font-medium">In Treatment:</span> {user.inTreatment}</p>
-          </div>
-        </div>
-      </div>
-    );
-  };
+    try {
+      // Get user details
+      const { data: userData, error: userError } = await supabase
+        .from('patients')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-  const renderStepContent = () => {
-    switch (step) {
-      case 'userId':
-        return (
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
-                Enter User ID
-              </label>
-              <Input
-                id="userId"
-                type="text"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="Enter User ID"
-                required
-              />
-            </div>
-            
-            <Button 
-              onClick={handleSendOtp} 
-              className="w-full"
-              disabled={loading}
-            >
-              {loading ? "Sending OTP..." : "Send OTP"}
-            </Button>
-          </div>
-        );
+      if (userError) {
+        console.error("Error fetching user:", userError);
+        toast({
+          title: "Error",
+          description: "User not found",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Transform DB data to User model
+      const transformedUser: User = {
+        userId: userData.id,
+        name: userData.name,
+        mobileNumber: userData.mobile_number,
+        emailId: userData.email,
+        dateOfBirth: userData.dob,
+        age: userData.age || 0,
+        sugar: booleanToYesNo(userData.sugar),
+        sugarLevel: userData.sugar_level,
+        bp: booleanToYesNo(userData.bp),
+        bpLevel: userData.bp_level,
+        cardiac: booleanToYesNo(userData.cardiac),
+        cardiacInfo: userData.cardiac_info,
+        kidney: booleanToYesNo(userData.kidney),
+        kidneyInfo: userData.kidney_info,
+        liver: booleanToYesNo(userData.liver),
+        liverInfo: userData.liver_info,
+        lungs: booleanToYesNo(userData.lungs),
+        lungsInfo: userData.lungs_info,
+        smoke: booleanToYesNo(userData.smoke),
+        alcohol: booleanToYesNo(userData.alcohol),
+        inTreatment: booleanToYesNo(userData.in_treatment),
+        height: userData.height_cm || 0,
+        weight: userData.weight_kg || 0,
+        bmi: userData.bmi || 0,
+        obesityLevel: userData.obesity_level as "Low" | "Correct" | "High" || "Correct",
+        houseNumber: userData.house_number || "",
+        street: userData.street || "",
+        village: userData.village || "",
+        district: userData.district || "",
+        state: userData.state || "",
+        country: userData.country || "",
+        pincode: userData.pincode || "",
+        password: "********", // Mask the password
+        createdDate: userData.created_date || "",
+        createdMonth: userData.created_month || "",
+        createdYear: userData.created_year || "",
+      };
+
+      setUser(transformedUser);
+
+      // Get consultations if available
+      const { data: consultationsData } = await supabase
+        .from('consultations')
+        .select('*')
+        .eq('patient_id', userId);
       
-      case 'otp':
-        return (
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
-                Enter OTP
-              </label>
-              <Input
-                id="otp"
-                type="text"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="Enter the OTP"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                The OTP has been sent to the user's email address.
-              </p>
-            </div>
-            
-            <Button 
-              onClick={handleVerifyOtp} 
-              className="w-full"
-              disabled={loading}
-            >
-              {loading ? "Verifying..." : "Verify OTP"}
-            </Button>
-            
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={handleSendOtp}
-                className="text-sm text-rapidcare-primary hover:underline"
-                disabled={loading}
-              >
-                {loading ? "Sending..." : "Send New OTP"}
-              </button>
-            </div>
-          </div>
-        );
+      if (consultationsData) {
+        setConsultations(consultationsData);
+      }
+
+      // Get admissions if available
+      const { data: admissionsData } = await supabase
+        .from('admissions')
+        .select('*')
+        .eq('patient_id', userId);
       
-      case 'details':
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <h2 className="text-lg font-semibold">User ID: {userId}</h2>
-              <Button onClick={() => setDialogOpen(true)}>
-                View Details
-              </Button>
-            </div>
-            
-            <Button 
-              onClick={handleReset} 
-              variant="outline" 
-              className="w-full"
-            >
-              Look Up Another User
-            </Button>
-          </div>
-        );
+      if (admissionsData) {
+        setAdmissions(admissionsData);
+      }
+    } catch (error) {
+      console.error("Error in user lookup:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch user details",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4 text-rapidcare-primary">User Details Lookup</h2>
-      
-      {renderStepContent()}
-      
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>User Details: {user?.name}</DialogTitle>
-          </DialogHeader>
-          
-          {renderUserDetails()}
-          
-          <div className="flex justify-end mt-4">
-            <Button onClick={() => setDialogOpen(false)}>Close</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Input
+          placeholder="Enter 10-digit User ID"
+          value={userId}
+          onChange={e => setUserId(e.target.value)}
+          className="flex-1"
+          maxLength={10}
+        />
+        <Button 
+          onClick={handleLookup}
+          disabled={loading}
+        >
+          {loading ? "Searching..." : "Search"}
+        </Button>
+      </div>
+
+      {loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Skeleton className="h-8 w-48" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-6 w-full mb-2" />
+            <Skeleton className="h-6 w-3/4 mb-2" />
+            <Skeleton className="h-6 w-1/2" />
+          </CardContent>
+        </Card>
+      )}
+
+      {user && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center">
+                <span>Patient Information</span>
+                <Badge>{user.userId}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Personal Details</h3>
+                    <div className="mt-2 space-y-1">
+                      <p><span className="font-medium">Name:</span> {user.name}</p>
+                      <p><span className="font-medium">Age:</span> {user.age}</p>
+                      <p><span className="font-medium">Date of Birth:</span> {user.dateOfBirth}</p>
+                      <p><span className="font-medium">Mobile:</span> {user.mobileNumber}</p>
+                      <p><span className="font-medium">Email:</span> {user.emailId}</p>
+                      <p><span className="font-medium">Currently In Treatment:</span> {user.inTreatment}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Address</h3>
+                    <div className="mt-2 space-y-1">
+                      <p>{user.houseNumber}, {user.street}</p>
+                      <p>{user.village}, {user.district}</p>
+                      <p>{user.state}, {user.country}</p>
+                      <p>PIN: {user.pincode}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Health Information</h3>
+                    <div className="mt-2 space-y-1">
+                      <p><span className="font-medium">Height:</span> {user.height} cm</p>
+                      <p><span className="font-medium">Weight:</span> {user.weight} kg</p>
+                      <p><span className="font-medium">BMI:</span> {user.bmi} ({user.obesityLevel})</p>
+                      <p><span className="font-medium">Diabetes:</span> {user.sugar} {user.sugar === "Yes" ? `(${user.sugarLevel})` : ""}</p>
+                      <p><span className="font-medium">Blood Pressure:</span> {user.bp} {user.bp === "Yes" ? `(${user.bpLevel})` : ""}</p>
+                      <p><span className="font-medium">Cardiac Issues:</span> {user.cardiac} {user.cardiac === "Yes" ? `(${user.cardiacInfo})` : ""}</p>
+                      <p><span className="font-medium">Kidney Issues:</span> {user.kidney} {user.kidney === "Yes" ? `(${user.kidneyInfo})` : ""}</p>
+                      <p><span className="font-medium">Liver Issues:</span> {user.liver} {user.liver === "Yes" ? `(${user.liverInfo})` : ""}</p>
+                      <p><span className="font-medium">Lungs Issues:</span> {user.lungs} {user.lungs === "Yes" ? `(${user.lungsInfo})` : ""}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Habits</h3>
+                    <div className="mt-2 space-y-1">
+                      <p><span className="font-medium">Smoking:</span> {user.smoke}</p>
+                      <p><span className="font-medium">Alcohol:</span> {user.alcohol}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Consultations */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Consultation History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {consultations.length === 0 ? (
+                <p className="text-gray-500">No consultations found.</p>
+              ) : (
+                <div className="space-y-4">
+                  {consultations.map(consultation => (
+                    <div key={consultation.id} className="border p-4 rounded-md">
+                      <p><span className="font-medium">Date & Time:</span> {consultation.consultation_date} at {consultation.consultation_time}</p>
+                      <p><span className="font-medium">Doctor:</span> {consultation.doctor_name}</p>
+                      <p><span className="font-medium">Place:</span> {consultation.place} {consultation.place_id ? `(ID: ${consultation.place_id})` : ""}</p>
+                      {consultation.prescription && <p><span className="font-medium">Prescription:</span> {consultation.prescription}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Admissions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Hospital Admission History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {admissions.length === 0 ? (
+                <p className="text-gray-500">No hospital admissions found.</p>
+              ) : (
+                <div className="space-y-4">
+                  {admissions.map(admission => (
+                    <div key={admission.id} className="border p-4 rounded-md">
+                      <p><span className="font-medium">Hospital:</span> {admission.hospital_name}</p>
+                      <p><span className="font-medium">Admitted:</span> {admission.date_in} at {admission.time_in}</p>
+                      {admission.date_out && <p><span className="font-medium">Discharged:</span> {admission.date_out} at {admission.time_out || "N/A"}</p>}
+                      <p><span className="font-medium">Status:</span> {admission.discharged ? "Discharged" : "Admitted"}</p>
+                      {admission.discharged && <p><span className="font-medium">Recovery Status:</span> {admission.recovered ? "Recovered" : "Under Treatment"}</p>}
+                      {admission.feedback && <p><span className="font-medium">Feedback:</span> {admission.feedback}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
