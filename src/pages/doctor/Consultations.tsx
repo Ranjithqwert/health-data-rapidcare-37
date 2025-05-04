@@ -10,13 +10,14 @@ import { toast } from "@/components/ui/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Calendar as CalendarIcon, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Upload, FileText, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Consultation {
   id: string;
@@ -39,6 +40,7 @@ const Consultations: React.FC = () => {
   const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
   const [prescription, setPrescription] = useState("");
   const [prescriptionFile, setPrescriptionFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState("");
   
   // New consultation form state
   const [patientId, setPatientId] = useState("");
@@ -110,13 +112,22 @@ const Consultations: React.FC = () => {
     setSelectedConsultation(consultation);
     setPrescription(consultation.prescription || "");
     setPrescriptionFile(null);
+    setFileError("");
     setOpenDialog(true);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      setPrescriptionFile(files[0]);
+      const file = files[0];
+      // Check file size (150KB max)
+      if (file.size > 153600) { // 150 * 1024 bytes
+        setFileError("File size exceeds 150KB limit");
+        setPrescriptionFile(null);
+      } else {
+        setFileError("");
+        setPrescriptionFile(file);
+      }
     }
   };
 
@@ -132,7 +143,7 @@ const Consultations: React.FC = () => {
         try {
           await supabase.storage.createBucket('prescriptions', {
             public: false,
-            fileSizeLimit: 10485760 // 10MB
+            fileSizeLimit: 153600 // 150KB
           });
         } catch (err) {
           // Bucket may already exist, which is fine
@@ -344,7 +355,10 @@ const Consultations: React.FC = () => {
                       <TableCell>{consultation.place}</TableCell>
                       <TableCell>
                         {consultation.prescription ? (
-                          consultation.report_link ? "File uploaded" : "Text added"
+                          <div className="flex items-center">
+                            <FileText className="h-4 w-4 mr-1" />
+                            {consultation.report_link ? "File uploaded" : "Text added"}
+                          </div>
                         ) : "Not added"}
                       </TableCell>
                       <TableCell>
@@ -372,62 +386,72 @@ const Consultations: React.FC = () => {
               </DialogTitle>
             </DialogHeader>
             
-            <div className="py-4">
-              <h3 className="font-medium mb-2">Patient: {selectedConsultation?.patient_name}</h3>
-              <h4 className="text-sm text-muted-foreground mb-4">
-                Date: {selectedConsultation?.consultation_date} at {selectedConsultation?.consultation_time}
-              </h4>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="prescription">Prescription Notes</Label>
-                  <Textarea
-                    id="prescription"
-                    value={prescription}
-                    onChange={(e) => setPrescription(e.target.value)}
-                    placeholder="Enter prescription details..."
-                    className="min-h-[150px]"
-                  />
-                </div>
+            <ScrollArea className="max-h-[60vh]">
+              <div className="py-4 pr-4">
+                <h3 className="font-medium mb-2">Patient: {selectedConsultation?.patient_name}</h3>
+                <h4 className="text-sm text-muted-foreground mb-4">
+                  Date: {selectedConsultation?.consultation_date} at {selectedConsultation?.consultation_time}
+                </h4>
                 
-                <div>
-                  <Label htmlFor="prescription-file">Upload Prescription File</Label>
-                  <Input 
-                    id="prescription-file" 
-                    type="file" 
-                    onChange={handleFileChange}
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Supported formats: PDF, DOC, DOCX, JPG, JPEG, PNG (Max 10MB)
-                  </p>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="prescription">Prescription Notes</Label>
+                    <Textarea
+                      id="prescription"
+                      value={prescription}
+                      onChange={(e) => setPrescription(e.target.value)}
+                      placeholder="Enter prescription details..."
+                      className="min-h-[150px]"
+                    />
+                  </div>
                   
-                  {/* Display file name if selected */}
-                  {prescriptionFile && (
-                    <Alert className="mt-2">
-                      <AlertDescription>
-                        Selected file: {prescriptionFile.name} ({Math.round(prescriptionFile.size / 1024)} KB)
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                  <div>
+                    <Label htmlFor="prescription-file">Upload Prescription File (Max 150KB)</Label>
+                    <Input 
+                      id="prescription-file" 
+                      type="file" 
+                      onChange={handleFileChange}
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
+                    />
+                    
+                    {fileError && (
+                      <Alert variant="destructive" className="mt-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>{fileError}</AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    {/* Display file name if selected */}
+                    {prescriptionFile && !fileError && (
+                      <Alert className="mt-2">
+                        <AlertDescription>
+                          Selected file: {prescriptionFile.name} ({Math.round(prescriptionFile.size / 1024)} KB)
+                        </AlertDescription>
+                      </Alert>
+                    )}
 
-                  {/* Display existing file if available */}
-                  {selectedConsultation?.report_link && !prescriptionFile && (
-                    <Alert className="mt-2">
-                      <AlertDescription>
-                        <a href={selectedConsultation.report_link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                          View uploaded prescription file
-                        </a>
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                    {/* Display existing file if available */}
+                    {selectedConsultation?.report_link && !prescriptionFile && (
+                      <Alert className="mt-2">
+                        <AlertDescription>
+                          <a href={selectedConsultation.report_link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center">
+                            <FileText className="h-4 w-4 mr-1" />
+                            View uploaded prescription file
+                          </a>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            </ScrollArea>
             
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpenDialog(false)}>Cancel</Button>
-              <Button onClick={savePrescription}>Save Prescription</Button>
+              <Button onClick={savePrescription} disabled={!!fileError}>
+                <Upload className="h-4 w-4 mr-2" />
+                Save Prescription
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

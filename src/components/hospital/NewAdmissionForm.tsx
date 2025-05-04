@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 
 const NewAdmissionForm = ({ onAdmissionCreated }: { onAdmissionCreated: () => void }) => {
@@ -158,129 +159,131 @@ const NewAdmissionForm = ({ onAdmissionCreated }: { onAdmissionCreated: () => vo
           </div>
 
           {patientDetails && (
-            <div className="mt-6 space-y-6">
-              <div>
-                <h3 className="text-lg font-medium">Patient Information</h3>
-                <Separator className="my-2" />
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Name</Label>
-                    <p className="text-gray-700">{patientDetails.name}</p>
-                  </div>
-                  <div>
-                    <Label>Age</Label>
-                    <p className="text-gray-700">{patientDetails.age}</p>
-                  </div>
-                  <div>
-                    <Label>Email</Label>
-                    <p className="text-gray-700">{patientDetails.email}</p>
-                  </div>
-                  <div>
-                    <Label>Phone</Label>
-                    <p className="text-gray-700">{patientDetails.mobile_number}</p>
+            <ScrollArea className="h-[500px] pr-4">
+              <div className="mt-6 space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium">Patient Information</h3>
+                  <Separator className="my-2" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Name</Label>
+                      <p className="text-gray-700">{patientDetails.name}</p>
+                    </div>
+                    <div>
+                      <Label>Age</Label>
+                      <p className="text-gray-700">{patientDetails.age}</p>
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      <p className="text-gray-700">{patientDetails.email}</p>
+                    </div>
+                    <div>
+                      <Label>Phone</Label>
+                      <p className="text-gray-700">{patientDetails.mobile_number}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <h3 className="text-lg font-medium">Health Information</h3>
-                <Separator className="my-2" />
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Height</Label>
-                    <p className="text-gray-700">{patientDetails.height_cm} cm</p>
-                  </div>
-                  <div>
-                    <Label>Weight</Label>
-                    <p className="text-gray-700">{patientDetails.weight_kg} kg</p>
-                  </div>
-                  <div>
-                    <Label>BMI</Label>
-                    <p className="text-gray-700">{patientDetails.bmi?.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <Label>Obesity Level</Label>
-                    <p className="text-gray-700">{patientDetails.obesity_level || 'Not available'}</p>
+                <div>
+                  <h3 className="text-lg font-medium">Health Information</h3>
+                  <Separator className="my-2" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Height</Label>
+                      <p className="text-gray-700">{patientDetails.height_cm} cm</p>
+                    </div>
+                    <div>
+                      <Label>Weight</Label>
+                      <p className="text-gray-700">{patientDetails.weight_kg} kg</p>
+                    </div>
+                    <div>
+                      <Label>BMI</Label>
+                      <p className="text-gray-700">{patientDetails.bmi?.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <Label>Obesity Level</Label>
+                      <p className="text-gray-700">{patientDetails.obesity_level || 'Not available'}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <h3 className="text-lg font-medium">Medical Conditions</h3>
-                <Separator className="my-2" />
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Sugar</Label>
-                    <p className="text-gray-700">{patientDetails.sugar ? 'Yes' : 'No'}</p>
-                    {patientDetails.sugar && patientDetails.sugar_level && (
-                      <p className="text-sm text-gray-500">Level: {patientDetails.sugar_level}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Blood Pressure</Label>
-                    <p className="text-gray-700">{patientDetails.bp ? 'Yes' : 'No'}</p>
-                    {patientDetails.bp && patientDetails.bp_level && (
-                      <p className="text-sm text-gray-500">Level: {patientDetails.bp_level}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Cardiac</Label>
-                    <p className="text-gray-700">{patientDetails.cardiac ? 'Yes' : 'No'}</p>
-                    {patientDetails.cardiac && patientDetails.cardiac_info && (
-                      <p className="text-sm text-gray-500">Info: {patientDetails.cardiac_info}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Kidney</Label>
-                    <p className="text-gray-700">{patientDetails.kidney ? 'Yes' : 'No'}</p>
-                    {patientDetails.kidney && patientDetails.kidney_info && (
-                      <p className="text-sm text-gray-500">Info: {patientDetails.kidney_info}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Liver</Label>
-                    <p className="text-gray-700">{patientDetails.liver ? 'Yes' : 'No'}</p>
-                    {patientDetails.liver && patientDetails.liver_info && (
-                      <p className="text-sm text-gray-500">Info: {patientDetails.liver_info}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Lungs</Label>
-                    <p className="text-gray-700">{patientDetails.lungs ? 'Yes' : 'No'}</p>
-                    {patientDetails.lungs && patientDetails.lungs_info && (
-                      <p className="text-sm text-gray-500">Info: {patientDetails.lungs_info}</p>
-                    )}
+                <div>
+                  <h3 className="text-lg font-medium">Medical Conditions</h3>
+                  <Separator className="my-2" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Sugar</Label>
+                      <p className="text-gray-700">{patientDetails.sugar ? 'Yes' : 'No'}</p>
+                      {patientDetails.sugar && patientDetails.sugar_level && (
+                        <p className="text-sm text-gray-500">Level: {patientDetails.sugar_level}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Blood Pressure</Label>
+                      <p className="text-gray-700">{patientDetails.bp ? 'Yes' : 'No'}</p>
+                      {patientDetails.bp && patientDetails.bp_level && (
+                        <p className="text-sm text-gray-500">Level: {patientDetails.bp_level}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Cardiac</Label>
+                      <p className="text-gray-700">{patientDetails.cardiac ? 'Yes' : 'No'}</p>
+                      {patientDetails.cardiac && patientDetails.cardiac_info && (
+                        <p className="text-sm text-gray-500">Info: {patientDetails.cardiac_info}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Kidney</Label>
+                      <p className="text-gray-700">{patientDetails.kidney ? 'Yes' : 'No'}</p>
+                      {patientDetails.kidney && patientDetails.kidney_info && (
+                        <p className="text-sm text-gray-500">Info: {patientDetails.kidney_info}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Liver</Label>
+                      <p className="text-gray-700">{patientDetails.liver ? 'Yes' : 'No'}</p>
+                      {patientDetails.liver && patientDetails.liver_info && (
+                        <p className="text-sm text-gray-500">Info: {patientDetails.liver_info}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Lungs</Label>
+                      <p className="text-gray-700">{patientDetails.lungs ? 'Yes' : 'No'}</p>
+                      {patientDetails.lungs && patientDetails.lungs_info && (
+                        <p className="text-sm text-gray-500">Info: {patientDetails.lungs_info}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <h3 className="text-lg font-medium">Lifestyle</h3>
-                <Separator className="my-2" />
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Smoke</Label>
-                    <p className="text-gray-700">{patientDetails.smoke ? 'Yes' : 'No'}</p>
-                  </div>
-                  <div>
-                    <Label>Alcohol</Label>
-                    <p className="text-gray-700">{patientDetails.alcohol ? 'Yes' : 'No'}</p>
-                  </div>
-                  <div>
-                    <Label>Currently in Treatment</Label>
-                    <p className="text-gray-700">{patientDetails.in_treatment ? 'Yes' : 'No'}</p>
+                <div>
+                  <h3 className="text-lg font-medium">Lifestyle</h3>
+                  <Separator className="my-2" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Smoke</Label>
+                      <p className="text-gray-700">{patientDetails.smoke ? 'Yes' : 'No'}</p>
+                    </div>
+                    <div>
+                      <Label>Alcohol</Label>
+                      <p className="text-gray-700">{patientDetails.alcohol ? 'Yes' : 'No'}</p>
+                    </div>
+                    <div>
+                      <Label>Currently in Treatment</Label>
+                      <p className="text-gray-700">{patientDetails.in_treatment ? 'Yes' : 'No'}</p>
+                    </div>
                   </div>
                 </div>
+                
+                <Button 
+                  onClick={createAdmission} 
+                  disabled={loading} 
+                  className="w-full mt-6"
+                >
+                  {loading ? "Creating Admission..." : "Admit Patient"}
+                </Button>
               </div>
-              
-              <Button 
-                onClick={createAdmission} 
-                disabled={loading} 
-                className="w-full mt-6"
-              >
-                {loading ? "Creating Admission..." : "Admit Patient"}
-              </Button>
-            </div>
+            </ScrollArea>
           )}
         </div>
       </CardContent>

@@ -10,7 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import NewAdmissionForm from "@/components/hospital/NewAdmissionForm";
+import { Upload, FileUp, FileCheck } from "lucide-react";
 
 interface Admission {
   id: string;
@@ -24,6 +26,7 @@ interface Admission {
   recovered?: boolean;
   feedback?: string;
   patient_name?: string;
+  report_link?: string;
 }
 
 const Admissions: React.FC = () => {
@@ -36,6 +39,9 @@ const Admissions: React.FC = () => {
   const [recovered, setRecovered] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredAdmissions, setFilteredAdmissions] = useState<Admission[]>([]);
+  const [reportFile, setReportFile] = useState<File | null>(null);
+  const [reportUploadDialogOpen, setReportUploadDialogOpen] = useState(false);
+  const [fileError, setFileError] = useState("");
 
   const hospitalId = localStorage.getItem('userId');
 
@@ -154,6 +160,94 @@ const Admissions: React.FC = () => {
     setNewAdmissionDialogOpen(false);
     fetchAdmissions();
   };
+  
+  const handleUploadReport = (admission: Admission) => {
+    setSelectedAdmission(admission);
+    setReportFile(null);
+    setFileError("");
+    setReportUploadDialogOpen(true);
+  };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      // Check file size (150KB max)
+      if (file.size > 153600) { // 150 * 1024 bytes
+        setFileError("File size exceeds 150KB limit");
+        setReportFile(null);
+      } else {
+        setFileError("");
+        setReportFile(file);
+      }
+    }
+  };
+  
+  const uploadReport = async () => {
+    if (!selectedAdmission || !reportFile) return;
+    
+    try {
+      // Create bucket if needed
+      try {
+        await supabase.storage.createBucket('admission-reports', {
+          public: false,
+          fileSizeLimit: 153600 // 150KB
+        });
+      } catch (err) {
+        // Bucket may already exist, which is fine
+        console.log("Bucket may already exist:", err);
+      }
+      
+      // Prepare a unique file name
+      const fileExt = reportFile.name.split('.').pop();
+      const fileName = `${Date.now()}-report.${fileExt}`;
+      const filePath = `${selectedAdmission.id}/${fileName}`;
+      
+      // Upload the file
+      const { error: uploadError, data } = await supabase.storage
+        .from('admission-reports')
+        .upload(filePath, reportFile, {
+          cacheControl: '3600',
+          upsert: true
+        });
+        
+      if (uploadError) {
+        throw uploadError;
+      }
+      
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('admission-reports')
+        .getPublicUrl(filePath);
+        
+      // Update the admission record
+      const { error } = await supabase
+        .from('admissions')
+        .update({ 
+          report_link: publicUrl
+        })
+        .eq('id', selectedAdmission.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Success",
+        description: "Report uploaded successfully",
+      });
+      
+      setReportUploadDialogOpen(false);
+      fetchAdmissions();
+    } catch (error) {
+      console.error("Error uploading report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upload report",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <AuthenticatedLayout requiredUserType="hospital">
@@ -189,7 +283,8 @@ const Admissions: React.FC = () => {
                       <TableHead>Patient ID</TableHead>
                       <TableHead>Admitted On</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Action</TableHead>
+                      <TableHead>Reports</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -205,6 +300,29 @@ const Admissions: React.FC = () => {
                             </Badge>
                           ) : (
                             <Badge>In Treatment</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {admission.report_link ? (
+                            <a 
+                              href={admission.report_link} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="flex items-center text-blue-600 hover:underline"
+                            >
+                              <FileCheck className="h-4 w-4 mr-1" />
+                              View Report
+                            </a>
+                          ) : (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleUploadReport(admission)}
+                              className="flex items-center"
+                            >
+                              <FileUp className="h-4 w-4 mr-1" />
+                              Upload Report
+                            </Button>
                           )}
                         </TableCell>
                         <TableCell>
@@ -263,15 +381,59 @@ const Admissions: React.FC = () => {
           </DialogContent>
         </Dialog>
         
+        {/* Upload Report Dialog */}
+        <Dialog open={reportUploadDialogOpen} onOpenChange={setReportUploadDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upload Patient Report</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div>
+                <label htmlFor="report-file" className="block mb-2 text-sm font-medium">
+                  Select Report File (Max 150KB)
+                </label>
+                <Input 
+                  id="report-file" 
+                  type="file" 
+                  onChange={handleFileChange}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
+                />
+                {fileError && (
+                  <p className="text-sm text-red-500 mt-1">{fileError}</p>
+                )}
+                {reportFile && !fileError && (
+                  <p className="text-sm text-green-600 mt-1">
+                    Selected file: {reportFile.name} ({Math.round(reportFile.size / 1024)} KB)
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setReportUploadDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={uploadReport} 
+                disabled={!reportFile || !!fileError}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Report
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        
         {/* New Admission Dialog */}
         <Dialog open={newAdmissionDialogOpen} onOpenChange={setNewAdmissionDialogOpen}>
           <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>New Patient Admission</DialogTitle>
             </DialogHeader>
-            <div className="py-4">
-              <NewAdmissionForm onAdmissionCreated={handleAdmissionCreated} />
-            </div>
+            <ScrollArea className="max-h-[80vh]">
+              <div className="py-4">
+                <NewAdmissionForm onAdmissionCreated={handleAdmissionCreated} />
+              </div>
+            </ScrollArea>
           </DialogContent>
         </Dialog>
       </div>
