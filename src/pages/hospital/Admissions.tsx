@@ -220,13 +220,13 @@ const Admissions: React.FC = () => {
         .from('admission-reports')
         .getPublicUrl(filePath);
         
-      // Update the admission record
+      // Instead of directly updating the admission, we need to create/update a record in admission_reports
       const { error } = await supabase
-        .from('admissions')
-        .update({ 
+        .from('admission_reports')
+        .upsert({ 
+          admission_id: selectedAdmission.id,
           report_link: publicUrl
-        })
-        .eq('id', selectedAdmission.id);
+        });
         
       if (error) {
         throw error;
