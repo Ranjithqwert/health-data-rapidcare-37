@@ -189,7 +189,7 @@ const Admissions: React.FC = () => {
     try {
       // Create bucket if needed
       try {
-        await supabase.storage.createBucket('admission-reports', {
+        await supabase.storage.createBucket('rapidcarereports', {
           public: false,
           fileSizeLimit: 153600 // 150KB
         });
@@ -201,11 +201,11 @@ const Admissions: React.FC = () => {
       // Prepare a unique file name
       const fileExt = reportFile.name.split('.').pop();
       const fileName = `${Date.now()}-report.${fileExt}`;
-      const filePath = `${selectedAdmission.id}/${fileName}`;
+      const filePath = `admissions/${selectedAdmission.id}/${fileName}`;
       
       // Upload the file
       const { error: uploadError, data } = await supabase.storage
-        .from('admission-reports')
+        .from('rapidcarereports')
         .upload(filePath, reportFile, {
           cacheControl: '3600',
           upsert: true
@@ -217,7 +217,7 @@ const Admissions: React.FC = () => {
       
       // Get the public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('admission-reports')
+        .from('rapidcarereports')
         .getPublicUrl(filePath);
         
       // Instead of directly updating the admission, we need to create/update a record in admission_reports

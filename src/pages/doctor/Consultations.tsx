@@ -141,7 +141,7 @@ const Consultations: React.FC = () => {
       if (prescriptionFile) {
         // Create bucket if needed
         try {
-          await supabase.storage.createBucket('prescriptions', {
+          await supabase.storage.createBucket('rapidcarereports', {
             public: false,
             fileSizeLimit: 153600 // 150KB
           });
@@ -153,11 +153,11 @@ const Consultations: React.FC = () => {
         // Prepare a unique file name
         const fileExt = prescriptionFile.name.split('.').pop();
         const fileName = `${Date.now()}-prescription.${fileExt}`;
-        const filePath = `${selectedConsultation.id}/${fileName}`;
+        const filePath = `prescriptions/${selectedConsultation.id}/${fileName}`;
         
         // Upload the file
         const { error: uploadError, data } = await supabase.storage
-          .from('prescriptions')
+          .from('rapidcarereports')
           .upload(filePath, prescriptionFile, {
             cacheControl: '3600',
             upsert: true
@@ -169,7 +169,7 @@ const Consultations: React.FC = () => {
         
         // Get the public URL
         const { data: { publicUrl } } = supabase.storage
-          .from('prescriptions')
+          .from('rapidcarereports')
           .getPublicUrl(filePath);
           
         reportLink = publicUrl;

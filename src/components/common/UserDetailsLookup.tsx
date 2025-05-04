@@ -11,6 +11,7 @@ import { User } from "@/models/models";
 import { booleanToYesNo } from "@/utils/email-utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileCheck, FileText } from "lucide-react";
+import UserReportsViewer from "./UserReportsViewer";
 
 interface UserDetailsLookupProps {
   userType: 'doctor' | 'hospital';
@@ -225,6 +226,9 @@ const UserDetailsLookup: React.FC<UserDetailsLookupProps> = ({ userType }) => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Medical Records Section */}
+            {user && <UserReportsViewer userId={user.userId} />}
 
             {/* Consultations */}
             <Card>
