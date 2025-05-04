@@ -32,7 +32,7 @@ export const IdDisplayDialog: React.FC<IdDisplayDialogProps> = ({
     setCopyStatus({ ...copyStatus, [field]: true });
     
     setTimeout(() => {
-      setCopyStatus({ ...copyStatus, [field]: false });
+      setCopyStatus(prev => ({ ...prev, [field]: false }));
     }, 2000);
   };
 

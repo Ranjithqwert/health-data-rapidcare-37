@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -187,16 +186,7 @@ const Admissions: React.FC = () => {
     if (!selectedAdmission || !reportFile) return;
     
     try {
-      // Create bucket if needed
-      try {
-        await supabase.storage.createBucket('rapidcarereports', {
-          public: false,
-          fileSizeLimit: 153600 // 150KB
-        });
-      } catch (err) {
-        // Bucket may already exist, which is fine
-        console.log("Bucket may already exist:", err);
-      }
+      console.log("Uploading report file:", reportFile.name);
       
       // Prepare a unique file name
       const fileExt = reportFile.name.split('.').pop();
@@ -212,15 +202,21 @@ const Admissions: React.FC = () => {
         });
         
       if (uploadError) {
+        console.error("Upload error:", uploadError);
         throw uploadError;
       }
       
+      console.log("File uploaded successfully:", data);
+      
       // Get the public URL
-      const { data: { publicUrl } } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from('rapidcarereports')
         .getPublicUrl(filePath);
+      
+      const publicUrl = urlData.publicUrl;
+      console.log("Public URL:", publicUrl);
         
-      // Instead of directly updating the admission, we need to create/update a record in admission_reports
+      // Create/update a record in admission_reports
       const { error } = await supabase
         .from('admission_reports')
         .upsert({ 
@@ -229,6 +225,7 @@ const Admissions: React.FC = () => {
         });
         
       if (error) {
+        console.error("Database upsert error:", error);
         throw error;
       }
       
@@ -243,7 +240,7 @@ const Admissions: React.FC = () => {
       console.error("Error uploading report:", error);
       toast({
         title: "Error",
-        description: "Failed to upload report",
+        description: "Failed to upload report. Please try again.",
         variant: "destructive",
       });
     }

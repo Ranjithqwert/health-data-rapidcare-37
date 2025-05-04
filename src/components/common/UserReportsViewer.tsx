@@ -25,13 +25,20 @@ const UserReportsViewer: React.FC<UserReportsViewerProps> = ({ userId }) => {
   const fetchUserData = async () => {
     setLoading(true);
     try {
+      console.log("Fetching data for user:", userId);
+      
       // Fetch consultations with prescriptions
       const { data: consultationData, error: consultationError } = await supabase
         .from('consultations')
         .select('*')
         .eq('patient_id', userId);
 
-      if (consultationError) throw consultationError;
+      if (consultationError) {
+        console.error("Error fetching consultations:", consultationError);
+        throw consultationError;
+      }
+      
+      console.log("Consultations data:", consultationData);
       
       // Fetch admissions
       const { data: admissionsData, error: admissionsError } = await supabase
@@ -39,29 +46,44 @@ const UserReportsViewer: React.FC<UserReportsViewerProps> = ({ userId }) => {
         .select('*')
         .eq('patient_id', userId);
 
-      if (admissionsError) throw admissionsError;
+      if (admissionsError) {
+        console.error("Error fetching admissions:", admissionsError);
+        throw admissionsError;
+      }
+      
+      console.log("Admissions data:", admissionsData);
       
       // Fetch reports for those admissions
       const admissionIds = admissionsData?.map(admission => admission.id) || [];
       
-      const { data: reportsData, error: reportsError } = await supabase
-        .from('admission_reports')
-        .select('*')
-        .in('admission_id', admissionIds.length > 0 ? admissionIds : ['none']);
-      
-      if (reportsError && admissionIds.length > 0) throw reportsError;
+      if (admissionIds.length > 0) {
+        const { data: reportsData, error: reportsError } = await supabase
+          .from('admission_reports')
+          .select('*')
+          .in('admission_id', admissionIds);
+        
+        if (reportsError) {
+          console.error("Error fetching reports:", reportsError);
+          throw reportsError;
+        }
+        
+        console.log("Reports data:", reportsData);
 
-      // Merge admission data with reports
-      const admissionsWithReports = admissionsData?.map(admission => {
-        const report = reportsData?.find(report => report.admission_id === admission.id);
-        return {
-          ...admission,
-          report_link: report?.report_link
-        };
-      }).filter(admission => admission.report_link) || [];
+        // Merge admission data with reports
+        const admissionsWithReports = admissionsData?.map(admission => {
+          const report = reportsData?.find(report => report.admission_id === admission.id);
+          return {
+            ...admission,
+            report_link: report?.report_link
+          };
+        }) || [];
+        
+        setReports(admissionsWithReports.filter(admission => admission.report_link));
+      } else {
+        setReports([]);
+      }
 
       setPrescriptions(consultationData?.filter(c => c.prescription || c.report_link) || []);
-      setReports(admissionsWithReports || []);
     } catch (error) {
       console.error("Error fetching user reports:", error);
     } finally {

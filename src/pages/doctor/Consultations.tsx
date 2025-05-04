@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { authService } from "@/services/auth.service";
@@ -139,16 +138,7 @@ const Consultations: React.FC = () => {
       
       // If there's a file, upload it to Supabase Storage
       if (prescriptionFile) {
-        // Create bucket if needed
-        try {
-          await supabase.storage.createBucket('rapidcarereports', {
-            public: false,
-            fileSizeLimit: 153600 // 150KB
-          });
-        } catch (err) {
-          // Bucket may already exist, which is fine
-          console.log("Bucket may already exist:", err);
-        }
+        console.log("Uploading prescription file:", prescriptionFile.name);
         
         // Prepare a unique file name
         const fileExt = prescriptionFile.name.split('.').pop();
@@ -164,15 +154,19 @@ const Consultations: React.FC = () => {
           });
           
         if (uploadError) {
+          console.error("Upload error:", uploadError);
           throw uploadError;
         }
         
+        console.log("File uploaded successfully:", data);
+        
         // Get the public URL
-        const { data: { publicUrl } } = supabase.storage
+        const { data: urlData } = supabase.storage
           .from('rapidcarereports')
           .getPublicUrl(filePath);
           
-        reportLink = publicUrl;
+        reportLink = urlData.publicUrl;
+        console.log("Public URL:", reportLink);
       }
       
       // Update the consultation record
@@ -185,6 +179,7 @@ const Consultations: React.FC = () => {
         .eq('id', selectedConsultation.id);
         
       if (error) {
+        console.error("Database update error:", error);
         throw error;
       }
       
