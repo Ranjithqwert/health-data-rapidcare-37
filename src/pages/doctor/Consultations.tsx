@@ -145,8 +145,8 @@ const Consultations: React.FC = () => {
         const fileName = `${Date.now()}-prescription.${fileExt}`;
         const filePath = `prescriptions/${selectedConsultation.id}/${fileName}`;
         
-        // Upload the file
-        const { error: uploadError, data } = await supabase.storage
+        // Upload the file to the rapidcarereports bucket
+        const { error: uploadError } = await supabase.storage
           .from('rapidcarereports')
           .upload(filePath, prescriptionFile, {
             cacheControl: '3600',
@@ -157,8 +157,6 @@ const Consultations: React.FC = () => {
           console.error("Upload error:", uploadError);
           throw uploadError;
         }
-        
-        console.log("File uploaded successfully:", data);
         
         // Get the public URL
         const { data: urlData } = supabase.storage
@@ -444,7 +442,6 @@ const Consultations: React.FC = () => {
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpenDialog(false)}>Cancel</Button>
               <Button onClick={savePrescription} disabled={!!fileError}>
-                <Upload className="h-4 w-4 mr-2" />
                 Save Prescription
               </Button>
             </DialogFooter>

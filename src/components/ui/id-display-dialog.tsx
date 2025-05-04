@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { User, Copy, Check } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 interface IdDisplayDialogProps {
   open: boolean;
@@ -28,12 +29,26 @@ export const IdDisplayDialog: React.FC<IdDisplayDialogProps> = ({
   });
 
   const copyToClipboard = (text: string, field: string) => {
-    navigator.clipboard.writeText(text);
-    setCopyStatus({ ...copyStatus, [field]: true });
-    
-    setTimeout(() => {
-      setCopyStatus(prev => ({ ...prev, [field]: false }));
-    }, 2000);
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setCopyStatus({ ...copyStatus, [field]: true });
+        toast({
+          title: "Copied to clipboard",
+          description: `${field === 'userId' ? 'User ID' : 'Password'} copied to clipboard`,
+        });
+        
+        setTimeout(() => {
+          setCopyStatus(prev => ({ ...prev, [field]: false }));
+        }, 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy text: ', err);
+        toast({
+          title: "Copy failed",
+          description: "Failed to copy text to clipboard",
+          variant: "destructive",
+        });
+      });
   };
 
   return (

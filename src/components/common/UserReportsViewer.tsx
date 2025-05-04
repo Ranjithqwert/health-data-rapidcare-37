@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Calendar, Clock } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 interface UserReportsViewerProps {
   userId: string;
@@ -53,39 +54,26 @@ const UserReportsViewer: React.FC<UserReportsViewerProps> = ({ userId }) => {
       
       console.log("Admissions data:", admissionsData);
       
-      // Fetch reports for those admissions
-      const admissionIds = admissionsData?.map(admission => admission.id) || [];
+      // Filter consultations to only include those with prescriptions
+      const prescriptionsData = consultationData?.filter(
+        c => c.prescription || c.report_link
+      ) || [];
       
-      if (admissionIds.length > 0) {
-        const { data: reportsData, error: reportsError } = await supabase
-          .from('admission_reports')
-          .select('*')
-          .in('admission_id', admissionIds);
-        
-        if (reportsError) {
-          console.error("Error fetching reports:", reportsError);
-          throw reportsError;
-        }
-        
-        console.log("Reports data:", reportsData);
-
-        // Merge admission data with reports
-        const admissionsWithReports = admissionsData?.map(admission => {
-          const report = reportsData?.find(report => report.admission_id === admission.id);
-          return {
-            ...admission,
-            report_link: report?.report_link
-          };
-        }) || [];
-        
-        setReports(admissionsWithReports.filter(admission => admission.report_link));
-      } else {
-        setReports([]);
-      }
-
-      setPrescriptions(consultationData?.filter(c => c.prescription || c.report_link) || []);
+      setPrescriptions(prescriptionsData);
+      
+      // Filter admissions to only include those with reports
+      const reportsData = admissionsData?.filter(
+        a => a.report_link
+      ) || [];
+      
+      setReports(reportsData);
     } catch (error) {
       console.error("Error fetching user reports:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load user reports",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

@@ -186,15 +186,16 @@ const Admissions: React.FC = () => {
     if (!selectedAdmission || !reportFile) return;
     
     try {
-      console.log("Uploading report file:", reportFile.name);
-      
       // Prepare a unique file name
       const fileExt = reportFile.name.split('.').pop();
       const fileName = `${Date.now()}-report.${fileExt}`;
       const filePath = `admissions/${selectedAdmission.id}/${fileName}`;
       
-      // Upload the file
-      const { error: uploadError, data } = await supabase.storage
+      console.log("Uploading to path:", filePath);
+      console.log("To bucket: rapidcarereports");
+      
+      // Upload the file to the rapidcarereports bucket
+      const { error: uploadError } = await supabase.storage
         .from('rapidcarereports')
         .upload(filePath, reportFile, {
           cacheControl: '3600',
@@ -206,8 +207,6 @@ const Admissions: React.FC = () => {
         throw uploadError;
       }
       
-      console.log("File uploaded successfully:", data);
-      
       // Get the public URL
       const { data: urlData } = supabase.storage
         .from('rapidcarereports')
@@ -215,17 +214,15 @@ const Admissions: React.FC = () => {
       
       const publicUrl = urlData.publicUrl;
       console.log("Public URL:", publicUrl);
-        
-      // Create/update a record in admission_reports
+      
+      // Update the admission record with the report link
       const { error } = await supabase
-        .from('admission_reports')
-        .upsert({ 
-          admission_id: selectedAdmission.id,
-          report_link: publicUrl
-        });
+        .from('admissions')
+        .update({ report_link: publicUrl })
+        .eq('id', selectedAdmission.id);
         
       if (error) {
-        console.error("Database upsert error:", error);
+        console.error("Database update error:", error);
         throw error;
       }
       
@@ -413,7 +410,6 @@ const Admissions: React.FC = () => {
                 onClick={uploadReport} 
                 disabled={!reportFile || !!fileError}
               >
-                <Upload className="h-4 w-4 mr-2" />
                 Upload Report
               </Button>
             </div>
