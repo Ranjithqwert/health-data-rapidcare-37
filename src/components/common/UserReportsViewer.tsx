@@ -12,9 +12,29 @@ interface UserReportsViewerProps {
   userId: string;
 }
 
+interface ConsultationRecord {
+  id: string;
+  consultation_date: string;
+  consultation_time: string;
+  doctor_name: string;
+  place: string;
+  prescription: string | null;
+  report_link?: string | null;
+}
+
+interface AdmissionRecord {
+  id: string;
+  date_in: string;
+  time_in: string;
+  hospital_name: string;
+  discharged: boolean;
+  recovered: boolean;
+  report_link?: string | null;
+}
+
 const UserReportsViewer: React.FC<UserReportsViewerProps> = ({ userId }) => {
-  const [prescriptions, setPrescriptions] = useState<any[]>([]);
-  const [reports, setReports] = useState<any[]>([]);
+  const [prescriptions, setPrescriptions] = useState<ConsultationRecord[]>([]);
+  const [reports, setReports] = useState<AdmissionRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,14 +79,14 @@ const UserReportsViewer: React.FC<UserReportsViewerProps> = ({ userId }) => {
         c => c.prescription || c.report_link
       ) || [];
       
-      setPrescriptions(prescriptionsData);
+      setPrescriptions(prescriptionsData as ConsultationRecord[]);
       
       // Filter admissions to only include those with reports
       const reportsData = admissionsData?.filter(
         a => a.report_link
       ) || [];
       
-      setReports(reportsData);
+      setReports(reportsData as AdmissionRecord[]);
     } catch (error) {
       console.error("Error fetching user reports:", error);
       toast({

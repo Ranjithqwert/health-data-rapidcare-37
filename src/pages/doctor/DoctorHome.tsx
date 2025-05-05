@@ -22,7 +22,10 @@ const DoctorHome: React.FC = () => {
             .eq('id', doctorId)
             .single();
           
-          if (error) throw error;
+          if (error) {
+            console.error("Error fetching doctor details:", error);
+            throw error;
+          }
           
           if (data) {
             // Transform the data to match our Doctor model
@@ -32,7 +35,7 @@ const DoctorHome: React.FC = () => {
               mobileNumber: data.mobile_number || '',
               email: data.email || '',
               dateOfBirth: data.dob || '',
-              hospital: data.hospital || '', // Using the correct field name
+              hospital: data.hospital || '',
               speciality: data.speciality || '',
               clinicHouseNumber: data.clinic_house_number || '',
               clinicStreet: data.clinic_street || '',
