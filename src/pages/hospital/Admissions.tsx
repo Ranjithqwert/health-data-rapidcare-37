@@ -26,6 +26,7 @@ interface Admission {
   feedback?: string;
   patient_name?: string;
   report_link?: string;
+  hospital_name: string;
 }
 
 const Admissions: React.FC = () => {
@@ -216,10 +217,13 @@ const Admissions: React.FC = () => {
       console.log("Public URL:", publicUrl);
       
       // Update the admission record with the report link
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('admissions')
-        .update({ report_link: publicUrl })
-        .eq('id', selectedAdmission.id);
+        .update({ 
+          report_link: publicUrl 
+        })
+        .eq('id', selectedAdmission.id)
+        .select();
         
       if (error) {
         console.error("Database update error:", error);

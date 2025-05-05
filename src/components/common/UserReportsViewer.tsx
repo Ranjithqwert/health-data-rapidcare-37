@@ -82,8 +82,9 @@ const UserReportsViewer: React.FC<UserReportsViewerProps> = ({ userId }) => {
       setPrescriptions(prescriptionsData as ConsultationRecord[]);
       
       // Filter admissions to only include those with reports
+      // Note: Safely handling the report_link property that might be undefined
       const reportsData = admissionsData?.filter(
-        a => a.report_link
+        a => a.report_link !== undefined && a.report_link !== null
       ) || [];
       
       setReports(reportsData as AdmissionRecord[]);
