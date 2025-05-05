@@ -187,6 +187,26 @@ const Admissions: React.FC = () => {
     if (!selectedAdmission || !reportFile) return;
     
     try {
+      // Check if the storage bucket exists, create if it doesn't
+      const { data: bucketExists } = await supabase
+        .storage
+        .getBucket('rapidcarereports');
+        
+      if (!bucketExists) {
+        console.log("Creating rapidcarereports bucket");
+        // If bucket doesn't exist, create it
+        const { error: bucketError } = await supabase
+          .storage
+          .createBucket('rapidcarereports', {
+            public: true
+          });
+        
+        if (bucketError) {
+          console.error("Error creating bucket:", bucketError);
+          throw bucketError;
+        }
+      }
+      
       // Prepare a unique file name
       const fileExt = reportFile.name.split('.').pop();
       const fileName = `${Date.now()}-report.${fileExt}`;

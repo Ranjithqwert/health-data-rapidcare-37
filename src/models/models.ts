@@ -97,24 +97,24 @@ export interface Consultation {
   patientName: string;
   doctorId: string;
   doctorName: string;
-  date: string;
-  time: string;
+  consultation_date: string; // Match the exact database column names
+  consultation_time: string; // Match the exact database column names
   place: "Hospital" | "Clinic";
-  placeId: string;
+  place_id: string;
   prescription?: string;
   report_link?: string; // Added report_link property 
 }
 
 export interface Admission {
   id: string;
-  userId: string;
-  userName: string;
-  hospitalId: string;
-  hospitalName: string;
-  dateIn: string;
-  timeIn: string;
-  dateOut?: string;
-  timeOut?: string;
+  patient_id: string; // Updated to match database column name
+  patient_name: string; // Updated to match database column name
+  hospital_id: string; // Updated to match database column name
+  hospital_name: string; // Updated to match database column name
+  date_in: string; // Updated to match database column name
+  time_in: string; // Updated to match database column name
+  date_out?: string; // Updated to match database column name
+  time_out?: string; // Updated to match database column name
   report_link?: string; // Updated to match database column name
   discharged: boolean;
   recovered: boolean;

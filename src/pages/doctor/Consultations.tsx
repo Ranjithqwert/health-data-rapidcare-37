@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { authService } from "@/services/auth.service";
@@ -139,6 +140,26 @@ const Consultations: React.FC = () => {
       // If there's a file, upload it to Supabase Storage
       if (prescriptionFile) {
         console.log("Uploading prescription file:", prescriptionFile.name);
+        
+        // Create bucket if it doesn't exist
+        const { data: bucketExists } = await supabase
+          .storage
+          .getBucket('rapidcarereports');
+          
+        if (!bucketExists) {
+          console.log("Creating rapidcarereports bucket");
+          // If bucket doesn't exist, create it
+          const { error: bucketError } = await supabase
+            .storage
+            .createBucket('rapidcarereports', {
+              public: true
+            });
+          
+          if (bucketError) {
+            console.error("Error creating bucket:", bucketError);
+            throw bucketError;
+          }
+        }
         
         // Prepare a unique file name
         const fileExt = prescriptionFile.name.split('.').pop();
