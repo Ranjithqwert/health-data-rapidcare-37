@@ -14,7 +14,7 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = ({ userType, title }) => {
   const navigate = useNavigate();
-  const [userId, setUserId] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
@@ -22,10 +22,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ userType, title }) => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userId || !password) {
+    if (!mobileNumber || !password) {
       toast({
         title: "Error",
-        description: "Please enter both user ID and password",
+        description: "Please enter both mobile number and password",
         variant: "destructive",
       });
       return;
@@ -34,8 +34,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ userType, title }) => {
     setLoading(true);
     
     try {
-      const response = await authService.login({
-        userId,
+      const response = await authService.loginWithMobile({
+        mobileNumber,
         password,
         userType
       });
@@ -87,15 +87,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ userType, title }) => {
         
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
-              {userType === 'admin' ? 'Username' : `${userType.charAt(0).toUpperCase() + userType.slice(1)} ID`}
+            <label htmlFor="mobileNumber" className="block text-sm font-medium text-gray-700 mb-1">
+              {userType === 'admin' ? 'Username' : 'Mobile Number'}
             </label>
             <Input
-              id="userId"
+              id="mobileNumber"
               type="text"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              placeholder={`Enter your ${userType === 'admin' ? 'username' : 'ID'}`}
+              value={mobileNumber}
+              onChange={(e) => setMobileNumber(e.target.value)}
+              placeholder={userType === 'admin' ? 'Enter your username' : 'Enter your mobile number'}
               className="login-input"
               required
             />

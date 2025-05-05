@@ -128,6 +128,13 @@ export interface LoginRequest {
   userType: 'admin' | 'doctor' | 'hospital' | 'user';
 }
 
+// New interface for login with mobile number
+export interface LoginWithMobileRequest {
+  mobileNumber: string;
+  password: string;
+  userType: 'admin' | 'doctor' | 'hospital' | 'user';
+}
+
 export interface LoginResponse {
   success: boolean;
   token?: string;

@@ -1,10 +1,11 @@
 
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { authService } from "@/services/auth.service";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ForgotPasswordModalProps {
   open: boolean;
@@ -13,18 +14,19 @@ interface ForgotPasswordModalProps {
 }
 
 const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose, userType }) => {
-  const [step, setStep] = useState<'userId' | 'otp' | 'reset'>('userId');
-  const [userId, setUserId] = useState("");
+  const [step, setStep] = useState<'enterMobile' | 'enterOTP' | 'resetPassword'>('enterMobile');
+  const [mobileNumber, setMobileNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState("");
 
-  const handleSendOtp = async () => {
-    if (!userId) {
+  const handleSendOTP = async () => {
+    if (!mobileNumber) {
       toast({
         title: "Error",
-        description: "Please enter your ID",
+        description: "Please enter your mobile number",
         variant: "destructive",
       });
       return;
@@ -33,15 +35,57 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
     setLoading(true);
     
     try {
-      const success = await authService.sendOTP(userId, userType);
+      // First, get the user's ID from the mobile number
+      let tableName: "doctors" | "hospitals" | "patients";
+      let mobileField: string;
+      
+      switch (userType) {
+        case 'doctor': 
+          tableName = 'doctors'; 
+          mobileField = 'mobile_number';
+          break;
+        case 'hospital': 
+          tableName = 'hospitals'; 
+          mobileField = 'mobile';
+          break;
+        case 'user': 
+          tableName = 'patients'; 
+          mobileField = 'mobile_number';
+          break;
+        default: 
+          throw new Error('Invalid user type');
+      }
+      
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('id')
+        .eq(mobileField, mobileNumber)
+        .maybeSingle();
+      
+      if (error || !data) {
+        console.error("Error fetching user ID:", error);
+        toast({
+          title: "Error",
+          description: "User not found. Please check your mobile number.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      setUserId(data.id);
+      
+      // Now send the OTP
+      const success = await authService.sendOTP(mobileNumber, userType);
+      
       if (success) {
-        setStep('otp');
+        setStep('enterOTP');
       }
     } catch (error) {
-      console.error("Send OTP error:", error);
+      console.error("Error sending OTP:", error);
       toast({
         title: "Error",
-        description: "An error occurred. Please try again.",
+        description: "Failed to send OTP. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -49,7 +93,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
     }
   };
 
-  const handleVerifyOtp = async () => {
+  const handleVerifyOTP = async () => {
     if (!otp) {
       toast({
         title: "Error",
@@ -63,14 +107,15 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
     
     try {
       const success = await authService.verifyOTP(userId, otp, userType);
+      
       if (success) {
-        setStep('reset');
+        setStep('resetPassword');
       }
     } catch (error) {
-      console.error("Verify OTP error:", error);
+      console.error("Error verifying OTP:", error);
       toast({
         title: "Error",
-        description: "An error occurred. Please try again.",
+        description: "Failed to verify OTP. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -82,7 +127,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
     if (!newPassword || !confirmPassword) {
       toast({
         title: "Error",
-        description: "Please enter both password fields",
+        description: "Please enter and confirm your new password",
         variant: "destructive",
       });
       return;
@@ -108,17 +153,17 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
       });
       
       if (success) {
-        handleClose();
         toast({
           title: "Success",
-          description: "Password reset successfully. Please login with your new password.",
+          description: "Password has been reset successfully",
         });
+        onClose();
       }
     } catch (error) {
-      console.error("Reset password error:", error);
+      console.error("Error resetting password:", error);
       toast({
         title: "Error",
-        description: "An error occurred. Please try again.",
+        description: "Failed to reset password. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -127,168 +172,126 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
   };
 
   const handleClose = () => {
+    setStep('enterMobile');
+    setMobileNumber("");
+    setOtp("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setLoading(false);
     onClose();
-    // Reset form after a delay to avoid flickering
-    setTimeout(() => {
-      setStep('userId');
-      setUserId("");
-      setOtp("");
-      setNewPassword("");
-      setConfirmPassword("");
-    }, 300);
-  };
-
-  const handleSendNewOtp = async () => {
-    setLoading(true);
-    
-    try {
-      const success = await authService.sendOTP(userId, userType);
-      if (success) {
-        setOtp("");
-      }
-    } catch (error) {
-      console.error("Send new OTP error:", error);
-      toast({
-        title: "Error",
-        description: "An error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const renderStepContent = () => {
-    switch (step) {
-      case 'userId':
-        return (
-          <>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
-                  Enter Your {userType.charAt(0).toUpperCase() + userType.slice(1)} ID
-                </label>
-                <Input
-                  id="userId"
-                  type="text"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  placeholder={`Enter your ${userType} ID`}
-                  required
-                />
-              </div>
-              
-              <Button 
-                onClick={handleSendOtp} 
-                className="w-full"
-                disabled={loading}
-              >
-                {loading ? "Sending OTP..." : "Send OTP"}
-              </Button>
-            </div>
-          </>
-        );
-      
-      case 'otp':
-        return (
-          <>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
-                  Enter OTP
-                </label>
-                <Input
-                  id="otp"
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="Enter the OTP sent to your email"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  OTP is valid for 10 minutes.
-                </p>
-              </div>
-              
-              <Button 
-                onClick={handleVerifyOtp} 
-                className="w-full"
-                disabled={loading}
-              >
-                {loading ? "Verifying..." : "Verify OTP"}
-              </Button>
-              
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={handleSendNewOtp}
-                  className="text-sm text-rapidcare-primary hover:underline"
-                  disabled={loading}
-                >
-                  {loading ? "Sending..." : "Send New OTP"}
-                </button>
-              </div>
-            </div>
-          </>
-        );
-      
-      case 'reset':
-        return (
-          <>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  New Password
-                </label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm Password
-                </label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
-                  required
-                />
-              </div>
-              
-              <Button 
-                onClick={handleResetPassword} 
-                className="w-full"
-                disabled={loading}
-              >
-                {loading ? "Resetting..." : "Reset Password"}
-              </Button>
-            </div>
-          </>
-        );
-    }
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {step === 'userId' && "Forgot Password"}
-            {step === 'otp' && "Enter OTP"}
-            {step === 'reset' && "Reset Password"}
+            {step === 'enterMobile' ? 'Forgot Password' : 
+             step === 'enterOTP' ? 'Enter OTP' : 'Reset Password'}
           </DialogTitle>
         </DialogHeader>
         
-        {renderStepContent()}
+        {step === 'enterMobile' && (
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="mobileNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                Mobile Number
+              </label>
+              <Input
+                id="mobileNumber"
+                type="text"
+                value={mobileNumber}
+                onChange={(e) => setMobileNumber(e.target.value)}
+                placeholder="Enter your mobile number"
+                className="w-full"
+                disabled={loading}
+              />
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleSendOTP} disabled={loading}>
+                {loading ? "Sending..." : "Send OTP"}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+        
+        {step === 'enterOTP' && (
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
+                OTP
+              </label>
+              <Input
+                id="otp"
+                type="text"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                placeholder="Enter the OTP sent to your email"
+                className="w-full"
+                disabled={loading}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                An OTP has been sent to your registered email. Please check your inbox.
+              </p>
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleVerifyOTP} disabled={loading}>
+                {loading ? "Verifying..." : "Verify OTP"}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+        
+        {step === 'resetPassword' && (
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                New Password
+              </label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter your new password"
+                className="w-full"
+                disabled={loading}
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password
+              </label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm your new password"
+                className="w-full"
+                disabled={loading}
+              />
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleResetPassword} disabled={loading}>
+                {loading ? "Resetting..." : "Reset Password"}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

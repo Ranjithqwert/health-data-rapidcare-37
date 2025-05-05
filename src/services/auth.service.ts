@@ -1,6 +1,5 @@
-
 import { apiService } from "./api.service";
-import { LoginRequest, ResetPasswordRequest, LoginResponse } from "@/models/models";
+import { LoginRequest, LoginWithMobileRequest, ResetPasswordRequest, LoginResponse } from "@/models/models";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { generate10DigitId } from "@/utils/email-utils";
@@ -52,7 +51,7 @@ class AuthService {
     return newId;
   }
 
-  // Login
+  // Login with ID
   async login(request: LoginRequest): Promise<LoginResponse> {
     try {
       // Different login logic for each user type
@@ -191,6 +190,130 @@ class AuthService {
     }
   }
 
+  // Login with mobile number
+  async loginWithMobile(request: LoginWithMobileRequest): Promise<LoginResponse> {
+    try {
+      // Different login logic for each user type
+      if (request.userType === 'admin') {
+        // For admin, use a special table or check
+        if (request.mobileNumber === 'admin' && request.password === 'admin123') {
+          // Mock admin login for testing
+          const token = 'admin-token-' + Date.now();
+          localStorage.setItem('token', token);
+          localStorage.setItem('userId', 'admin');
+          localStorage.setItem('userType', request.userType);
+          localStorage.setItem('userName', 'Administrator');
+          
+          return {
+            success: true,
+            token,
+            userId: 'admin',
+            name: 'Administrator'
+          };
+        } else {
+          return { success: false, error: 'Invalid admin credentials' };
+        }
+      } else {
+        // For other user types, query the appropriate table
+        let tableName: "doctors" | "hospitals" | "patients";
+        let mobileField: string;
+        
+        switch (request.userType) {
+          case 'doctor': 
+            tableName = 'doctors'; 
+            mobileField = 'mobile_number';
+            break;
+          case 'hospital': 
+            tableName = 'hospitals'; 
+            mobileField = 'mobile';
+            break;
+          case 'user': 
+            tableName = 'patients'; 
+            mobileField = 'mobile_number';
+            break;
+          default: 
+            return { success: false, error: 'Invalid user type' };
+        }
+        
+        try {
+          // Query by mobile number instead of ID
+          const { data, error } = await supabase
+            .from(tableName)
+            .select('*')
+            .eq(mobileField, request.mobileNumber)
+            .maybeSingle();
+            
+          if (error) {
+            console.error("Supabase error:", error);
+            return { success: false, error: 'User not found' };
+          }
+          
+          if (!data) {
+            return { success: false, error: 'User not found' };
+          }
+          
+          // Safely check if password exists and matches
+          if (!('password' in data) || data.password !== request.password) {
+            return { success: false, error: 'Invalid password' };
+          }
+          
+          const token = `${request.userType}-token-${Date.now()}`;
+          
+          // Correctly extract values from the data object with proper type checking
+          let userId = '';
+          let userName = '';
+          let userEmail = '';
+          let userMobile = '';
+          
+          // Ensuring data is not null before accessing its properties
+          if (data) {
+            // Check if id exists and is of the right type
+            if ('id' in data && data.id !== null && (typeof data.id === 'string' || typeof data.id === 'number')) {
+              userId = String(data.id);
+            }
+            
+            // Check if name exists and is of the right type
+            if ('name' in data && data.name !== null && typeof data.name === 'string') {
+              userName = data.name;
+            }
+            
+            // Check if email exists
+            if ('email' in data && data.email !== null && typeof data.email === 'string') {
+              userEmail = data.email;
+            }
+            
+            // Check if mobile_number or mobile exists based on user type
+            if (request.userType === 'hospital' && 'mobile' in data && data.mobile !== null && typeof data.mobile === 'string') {
+              userMobile = data.mobile;
+            } else if ('mobile_number' in data && data.mobile_number !== null && typeof data.mobile_number === 'string') {
+              userMobile = data.mobile_number;
+            }
+          }
+          
+          localStorage.setItem('token', token);
+          localStorage.setItem('userId', userId);
+          localStorage.setItem('userType', request.userType);
+          localStorage.setItem('userName', userName);
+          localStorage.setItem('userEmail', userEmail || '');
+          localStorage.setItem('userMobile', userMobile || '');
+          
+          return {
+            success: true,
+            token,
+            userId,
+            name: userName
+          };
+        } catch (error) {
+          console.error("Database query error:", error);
+          return { success: false, error: 'User not found or database error' };
+        }
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      return { success: false, error: 'Network error. Please try again.' };
+    }
+  }
+
   // Logout
   logout(): void {
     localStorage.removeItem('token');
@@ -205,23 +328,34 @@ class AuthService {
   }
 
   // Send OTP for password reset
-  async sendOTP(userId: string, userType: 'doctor' | 'hospital' | 'user'): Promise<boolean> {
+  async sendOTP(mobileNumber: string, userType: 'doctor' | 'hospital' | 'user'): Promise<boolean> {
     try {
-      // Get the user's email based on userType
+      // Get the user's email based on userType and mobile number
       let tableName: "doctors" | "hospitals" | "patients";
+      let mobileField: string;
       
       switch (userType) {
-        case 'doctor': tableName = 'doctors'; break;
-        case 'hospital': tableName = 'hospitals'; break;
-        case 'user': tableName = 'patients'; break;
-        default: return false;
+        case 'doctor': 
+          tableName = 'doctors'; 
+          mobileField = 'mobile_number';
+          break;
+        case 'hospital': 
+          tableName = 'hospitals'; 
+          mobileField = 'mobile';
+          break;
+        case 'user': 
+          tableName = 'patients'; 
+          mobileField = 'mobile_number';
+          break;
+        default: 
+          return false;
       }
       
-      // Get user email from the appropriate table
+      // Get user email from the appropriate table using mobile number
       const { data: userData, error: userError } = await supabase
         .from(tableName)
-        .select('email')
-        .eq('id', userId)
+        .select('email, id')
+        .eq(mobileField, mobileNumber)
         .maybeSingle();
         
       if (userError) {
@@ -245,8 +379,8 @@ class AuthService {
         return false;
       }
       
-      // Safely type check and extract email
-      if (!('email' in userData) || typeof userData.email !== 'string') {
+      // Safely type check and extract email and ID
+      if (!('email' in userData) || typeof userData.email !== 'string' || !('id' in userData)) {
         console.error("Email field missing or invalid in user data");
         toast({
           title: "Error",
@@ -257,6 +391,7 @@ class AuthService {
       }
       
       const email = userData.email;
+      const userId = userData.id;
       
       // Generate a 6-digit OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -269,7 +404,7 @@ class AuthService {
       const { data: existingOtp, error: selectError } = await supabase
         .from('otps')
         .select()
-        .eq('id', userId) // Using id directly since we don't have user_id field
+        .eq('id', userId)
         .maybeSingle();
       
       if (selectError) {
@@ -333,7 +468,7 @@ class AuthService {
         // We still continue as the OTP is stored in the database
       }
       
-      console.log(`OTP for ${userType} with ID ${userId}: ${otp} (would be sent to ${email})`);
+      console.log(`OTP for ${userType} with mobile ${mobileNumber}: ${otp} (would be sent to ${email})`);
       
       toast({
         title: "OTP Sent",

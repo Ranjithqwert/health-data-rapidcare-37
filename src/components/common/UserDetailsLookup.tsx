@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,17 +18,17 @@ interface UserDetailsLookupProps {
 }
 
 const UserDetailsLookup: React.FC<UserDetailsLookupProps> = ({ userType }) => {
-  const [userId, setUserId] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [consultations, setConsultations] = useState<any[]>([]);
   const [admissions, setAdmissions] = useState<any[]>([]);
 
   const handleLookup = async () => {
-    if (!userId.trim()) {
+    if (!mobileNumber.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a valid user ID",
+        description: "Please enter a valid mobile number",
         variant: "destructive",
       });
       return;
@@ -39,18 +40,28 @@ const UserDetailsLookup: React.FC<UserDetailsLookupProps> = ({ userType }) => {
     setAdmissions([]);
 
     try {
-      // Get user details
+      // Get user details by mobile number
       const { data: userData, error: userError } = await supabase
         .from('patients')
         .select('*')
-        .eq('id', userId)
-        .single();
+        .eq('mobile_number', mobileNumber)
+        .maybeSingle();
 
       if (userError) {
         console.error("Error fetching user:", userError);
         toast({
           title: "Error",
           description: "User not found",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!userData) {
+        toast({
+          title: "Error",
+          description: "No user found with this mobile number",
           variant: "destructive",
         });
         setLoading(false);
@@ -99,21 +110,21 @@ const UserDetailsLookup: React.FC<UserDetailsLookupProps> = ({ userType }) => {
 
       setUser(transformedUser);
 
-      // Get consultations if available
+      // Get consultations for this user ID
       const { data: consultationsData } = await supabase
         .from('consultations')
         .select('*')
-        .eq('patient_id', userId);
+        .eq('patient_id', userData.id);
       
       if (consultationsData) {
         setConsultations(consultationsData);
       }
 
-      // Get admissions if available
+      // Get admissions for this user ID
       const { data: admissionsData } = await supabase
         .from('admissions')
         .select('*')
-        .eq('patient_id', userId);
+        .eq('patient_id', userData.id);
       
       if (admissionsData) {
         setAdmissions(admissionsData);
@@ -134,9 +145,9 @@ const UserDetailsLookup: React.FC<UserDetailsLookupProps> = ({ userType }) => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4">
         <Input
-          placeholder="Enter 10-digit User ID"
-          value={userId}
-          onChange={e => setUserId(e.target.value)}
+          placeholder="Enter 10-digit Mobile Number"
+          value={mobileNumber}
+          onChange={e => setMobileNumber(e.target.value)}
           className="flex-1"
         />
         <Button 
