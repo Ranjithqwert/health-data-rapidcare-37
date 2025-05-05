@@ -72,6 +72,7 @@ export type Database = {
           patient_id: string
           patient_name: string
           recovered: boolean | null
+          report_link: string | null
           time_in: string
           time_out: string | null
         }
@@ -87,6 +88,7 @@ export type Database = {
           patient_id: string
           patient_name: string
           recovered?: boolean | null
+          report_link?: string | null
           time_in: string
           time_out?: string | null
         }
@@ -102,6 +104,7 @@ export type Database = {
           patient_id?: string
           patient_name?: string
           recovered?: boolean | null
+          report_link?: string | null
           time_in?: string
           time_out?: string | null
         }

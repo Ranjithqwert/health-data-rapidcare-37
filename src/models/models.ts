@@ -67,8 +67,8 @@ export interface User {
   smoke: "Yes" | "No";
   alcohol: "Yes" | "No";
   inTreatment: "Yes" | "No";
-  height: number; // in cm
-  weight: number; // in kg
+  height_cm: number; // Updated to match database column name
+  weight_kg: number; // Updated to match database column name
   bmi: number; // Calculated field
   obesityLevel: "Low" | "Correct" | "High"; // Calculated field
   houseNumber: string;
@@ -102,7 +102,7 @@ export interface Consultation {
   place: "Hospital" | "Clinic";
   placeId: string;
   prescription?: string;
-  report?: string; // Link to files
+  report_link?: string; // Added report_link property 
 }
 
 export interface Admission {
@@ -115,7 +115,7 @@ export interface Admission {
   timeIn: string;
   dateOut?: string;
   timeOut?: string;
-  report?: string; // Link to files
+  report_link?: string; // Updated to match database column name
   discharged: boolean;
   recovered: boolean;
   feedback?: string;
