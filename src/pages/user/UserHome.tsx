@@ -29,10 +29,10 @@ const UserHome: React.FC = () => {
             const transformedUser: User = {
               userId: data.id,
               name: data.name,
-              age: data.age || 0,
-              dateOfBirth: data.dob || '',
               mobileNumber: data.mobile_number || '',
               emailId: data.email || '',
+              dateOfBirth: data.dob || '',
+              age: data.age || 0,
               houseNumber: data.house_number || '',
               street: data.street || '',
               village: data.village || '',
@@ -40,8 +40,8 @@ const UserHome: React.FC = () => {
               state: data.state || '',
               country: data.country || '',
               pincode: data.pincode || '',
-              height: data.height_cm || 0,
-              weight: data.weight_kg || 0,
+              height_cm: data.height_cm || 0,
+              weight_kg: data.weight_kg || 0,
               bmi: data.bmi || 0,
               obesityLevel: (data.obesity_level as "Low" | "Correct" | "High") || "Correct",
               sugar: data.sugar ? "Yes" : "No",
@@ -158,8 +158,8 @@ const UserHome: React.FC = () => {
               <div className="col-span-1">
                 <h3 className="font-medium text-gray-700">Body Metrics</h3>
                 <div className="mt-2 space-y-2">
-                  <p><span className="font-medium">Height:</span> {user?.height} cm</p>
-                  <p><span className="font-medium">Weight:</span> {user?.weight} kg</p>
+                  <p><span className="font-medium">Height:</span> {user?.height_cm} cm</p>
+                  <p><span className="font-medium">Weight:</span> {user?.weight_kg} kg</p>
                   <p><span className="font-medium">BMI:</span> {user?.bmi}</p>
                   <p><span className="font-medium">Obesity Level:</span> {user?.obesityLevel}</p>
                 </div>

@@ -81,8 +81,8 @@ const UserDetailsLookup: React.FC<UserDetailsLookupProps> = ({ userType }) => {
         smoke: booleanToYesNo(userData.smoke),
         alcohol: booleanToYesNo(userData.alcohol),
         inTreatment: booleanToYesNo(userData.in_treatment),
-        height: userData.height_cm || 0,
-        weight: userData.weight_kg || 0,
+        height_cm: userData.height_cm || 0,
+        weight_kg: userData.weight_kg || 0,
         bmi: userData.bmi || 0,
         obesityLevel: userData.obesity_level as "Low" | "Correct" | "High" || "Correct",
         houseNumber: userData.house_number || "",
@@ -203,8 +203,8 @@ const UserDetailsLookup: React.FC<UserDetailsLookupProps> = ({ userType }) => {
                     <div>
                       <h3 className="font-semibold text-gray-700">Health Information</h3>
                       <div className="mt-2 space-y-1">
-                        <p><span className="font-medium">Height:</span> {user.height} cm</p>
-                        <p><span className="font-medium">Weight:</span> {user.weight} kg</p>
+                        <p><span className="font-medium">Height:</span> {user.height_cm} cm</p>
+                        <p><span className="font-medium">Weight:</span> {user.weight_kg} kg</p>
                         <p><span className="font-medium">BMI:</span> {user.bmi} ({user.obesityLevel})</p>
                         <p><span className="font-medium">Diabetes:</span> {user.sugar} {user.sugar === "Yes" ? `(${user.sugarLevel})` : ""}</p>
                         <p><span className="font-medium">Blood Pressure:</span> {user.bp} {user.bp === "Yes" ? `(${user.bpLevel})` : ""}</p>

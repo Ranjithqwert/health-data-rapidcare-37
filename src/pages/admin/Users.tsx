@@ -149,8 +149,8 @@ const Users: React.FC = () => {
         alcohol: user.alcohol ? "Yes" : "No",
         inTreatment: user.in_treatment ? "Yes" : "No",
         // Fix the field names to match what's in the database
-        height: user.height_cm || 0,
-        weight: user.weight_kg || 0,
+        height_cm: user.height_cm || 0,
+        weight_kg: user.weight_kg || 0,
         bmi: user.bmi || 0,
         obesityLevel: user.obesity_level as "Low" | "Correct" | "High" || "Correct",
         houseNumber: user.house_number || '',
@@ -215,8 +215,8 @@ const Users: React.FC = () => {
     setPincode(user.pincode || "");
     
     // Health information
-    setHeight(user.height || 170);
-    setWeight(user.weight || 70);
+    setHeight(user.height_cm || 170);
+    setWeight(user.weight_kg || 70);
     setSugar(user.sugar || "No");
     setSugarLevel(user.sugarLevel || "");
     setBp(user.bp || "No");
