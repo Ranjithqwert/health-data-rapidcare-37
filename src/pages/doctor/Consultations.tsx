@@ -141,30 +141,33 @@ const Consultations: React.FC = () => {
       if (prescriptionFile) {
         console.log("Uploading prescription file:", prescriptionFile.name);
         
-        // Create bucket if it doesn't exist
-        const { data: bucketExists } = await supabase
-          .storage
-          .getBucket('rapidcarereports');
+        // Check if bucket exists, create if it doesn't
+        try {
+          const { data: bucketList } = await supabase.storage.listBuckets();
+          const bucketExists = bucketList?.some(bucket => bucket.name === 'rapidcarereports');
           
-        if (!bucketExists) {
-          console.log("Creating rapidcarereports bucket");
-          // If bucket doesn't exist, create it
-          const { error: bucketError } = await supabase
-            .storage
-            .createBucket('rapidcarereports', {
+          if (!bucketExists) {
+            console.log("Creating rapidcarereports bucket");
+            const { error: bucketError } = await supabase.storage.createBucket('rapidcarereports', {
               public: true
             });
-          
-          if (bucketError) {
-            console.error("Error creating bucket:", bucketError);
-            throw bucketError;
+            
+            if (bucketError) {
+              console.error("Error creating bucket:", bucketError);
+              throw bucketError;
+            }
           }
+        } catch (error) {
+          console.error("Error checking bucket:", error);
+          throw error;
         }
         
         // Prepare a unique file name
         const fileExt = prescriptionFile.name.split('.').pop();
-        const fileName = `${Date.now()}-prescription.${fileExt}`;
-        const filePath = `prescriptions/${selectedConsultation.id}/${fileName}`;
+        const fileName = `${selectedConsultation.id}_report.${fileExt}`;
+        const filePath = `consultations/${selectedConsultation.id}/${fileName}`;
+        
+        console.log("Uploading to path:", filePath);
         
         // Upload the file to the rapidcarereports bucket
         const { error: uploadError } = await supabase.storage

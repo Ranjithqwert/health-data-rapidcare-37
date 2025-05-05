@@ -188,28 +188,32 @@ const Admissions: React.FC = () => {
     
     try {
       // Check if the storage bucket exists, create if it doesn't
-      const { data: bucketExists } = await supabase
-        .storage
-        .getBucket('rapidcarereports');
+      try {
+        const { data: bucketList } = await supabase.storage.listBuckets();
+        const bucketExists = bucketList?.some(bucket => bucket.name === 'rapidcarereports');
         
-      if (!bucketExists) {
-        console.log("Creating rapidcarereports bucket");
-        // If bucket doesn't exist, create it
-        const { error: bucketError } = await supabase
-          .storage
-          .createBucket('rapidcarereports', {
-            public: true
-          });
-        
-        if (bucketError) {
-          console.error("Error creating bucket:", bucketError);
-          throw bucketError;
+        if (!bucketExists) {
+          console.log("Creating rapidcarereports bucket");
+          // If bucket doesn't exist, create it
+          const { error: bucketError } = await supabase
+            .storage
+            .createBucket('rapidcarereports', {
+              public: true
+            });
+          
+          if (bucketError) {
+            console.error("Error creating bucket:", bucketError);
+            throw bucketError;
+          }
         }
+      } catch (error) {
+        console.error("Error checking bucket:", error);
+        throw error;
       }
       
       // Prepare a unique file name
       const fileExt = reportFile.name.split('.').pop();
-      const fileName = `${Date.now()}-report.${fileExt}`;
+      const fileName = `${selectedAdmission.id}_report.${fileExt}`;
       const filePath = `admissions/${selectedAdmission.id}/${fileName}`;
       
       console.log("Uploading to path:", filePath);
