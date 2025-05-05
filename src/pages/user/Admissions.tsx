@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { authService } from "@/services/auth.service";
@@ -28,26 +29,26 @@ const Admissions: React.FC = () => {
       const mockAdmissions: Admission[] = [
         {
           id: "1",
-          userId: userId || "",
-          userName: authService.getUserName() || "Patient",
-          hospitalId: "hospital1",
-          hospitalName: "City General Hospital",
-          dateIn: "2023-03-10",
-          timeIn: "08:30 AM",
-          dateOut: "2023-03-15",
-          timeOut: "02:00 PM",
+          patient_id: userId || "",
+          patient_name: authService.getUserName() || "Patient",
+          hospital_id: "hospital1",
+          hospital_name: "City General Hospital",
+          date_in: "2023-03-10",
+          time_in: "08:30 AM",
+          date_out: "2023-03-15",
+          time_out: "02:00 PM",
           discharged: true,
           recovered: true,
           feedback: "Patient recovered well after treatment"
         },
         {
           id: "2",
-          userId: userId || "",
-          userName: authService.getUserName() || "Patient",
-          hospitalId: "hospital2",
-          hospitalName: "Medical Center",
-          dateIn: "2023-04-22",
-          timeIn: "11:45 AM",
+          patient_id: userId || "",
+          patient_name: authService.getUserName() || "Patient",
+          hospital_id: "hospital2",
+          hospital_name: "Medical Center",
+          date_in: "2023-04-22",
+          time_in: "11:45 AM",
           discharged: false,
           recovered: false
         }
@@ -113,11 +114,11 @@ const Admissions: React.FC = () => {
                 <TableBody>
                   {admissions.map((admission) => (
                     <TableRow key={admission.id}>
-                      <TableCell>{admission.hospitalName}</TableCell>
-                      <TableCell>{`${admission.dateIn} ${admission.timeIn}`}</TableCell>
+                      <TableCell>{admission.hospital_name}</TableCell>
+                      <TableCell>{`${admission.date_in} ${admission.time_in}`}</TableCell>
                       <TableCell>
                         {admission.discharged 
-                          ? `${admission.dateOut} ${admission.timeOut}` 
+                          ? `${admission.date_out} ${admission.time_out}` 
                           : "Not discharged yet"}
                       </TableCell>
                       <TableCell>
@@ -140,13 +141,13 @@ const Admissions: React.FC = () => {
                             </DialogHeader>
                             <div className="py-4">
                               <div className="mb-4">
-                                <h3 className="font-medium">Hospital: {admission.hospitalName}</h3>
+                                <h3 className="font-medium">Hospital: {admission.hospital_name}</h3>
                                 <p className="text-sm text-muted-foreground">
-                                  Admitted on: {admission.dateIn} at {admission.timeIn}
+                                  Admitted on: {admission.date_in} at {admission.time_in}
                                 </p>
                                 {admission.discharged && (
                                   <p className="text-sm text-muted-foreground">
-                                    Discharged on: {admission.dateOut} at {admission.timeOut}
+                                    Discharged on: {admission.date_out} at {admission.time_out}
                                   </p>
                                 )}
                               </div>

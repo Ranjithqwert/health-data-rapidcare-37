@@ -33,10 +33,10 @@ const Consultations: React.FC = () => {
           patientName: authService.getUserName() || "Patient",
           doctorId: "doctor1",
           doctorName: "Dr. Sarah Johnson",
-          date: "2023-05-15",
-          time: "10:00 AM",
+          consultation_date: "2023-05-15",
+          consultation_time: "10:00 AM",
           place: "Hospital",
-          placeId: "hospital1",
+          place_id: "hospital1",
           prescription: "Take paracetamol twice daily for 3 days"
         },
         {
@@ -45,10 +45,10 @@ const Consultations: React.FC = () => {
           patientName: authService.getUserName() || "Patient",
           doctorId: "doctor2",
           doctorName: "Dr. Robert Miller",
-          date: "2023-05-20",
-          time: "2:30 PM",
+          consultation_date: "2023-05-20",
+          consultation_time: "2:30 PM",
           place: "Clinic",
-          placeId: "clinic1",
+          place_id: "clinic1",
           prescription: "Complete bed rest for a week and follow up"
         }
       ];
@@ -115,8 +115,8 @@ const Consultations: React.FC = () => {
                   {consultations.map((consultation) => (
                     <TableRow key={consultation.id}>
                       <TableCell>{consultation.doctorName}</TableCell>
-                      <TableCell>{consultation.date}</TableCell>
-                      <TableCell>{consultation.time}</TableCell>
+                      <TableCell>{consultation.consultation_date}</TableCell>
+                      <TableCell>{consultation.consultation_time}</TableCell>
                       <TableCell>{consultation.place}</TableCell>
                       <TableCell>{consultation.prescription ? "Available" : "Not available"}</TableCell>
                       <TableCell>
@@ -138,7 +138,7 @@ const Consultations: React.FC = () => {
                                 <div className="mb-4">
                                   <h3 className="font-medium">Doctor: {consultation.doctorName}</h3>
                                   <p className="text-sm text-muted-foreground">
-                                    {consultation.date} at {consultation.time}
+                                    {consultation.consultation_date} at {consultation.consultation_time}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
                                     Location: {consultation.place}
