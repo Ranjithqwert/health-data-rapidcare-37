@@ -334,25 +334,22 @@ class AuthService {
   // Send OTP for password reset
   async sendOTP(mobileNumber: string, userType: 'doctor' | 'hospital' | 'user'): Promise<boolean> {
     try {
-      // Get the user's email based on userType and mobile number
+      // Map the user type to the appropriate table name
       let tableName: TableName;
       let mobileField: string;
       
-      switch (userType) {
-        case 'doctor': 
-          tableName = 'doctors'; 
-          mobileField = 'mobile_number';
-          break;
-        case 'hospital': 
-          tableName = 'hospitals'; 
-          mobileField = 'mobile';
-          break;
-        case 'user': 
-          tableName = 'patients'; 
-          mobileField = 'mobile_number';
-          break;
-        default: 
-          return false;
+      // Use simple assignment instead of complex mapping that might cause type recursion
+      if (userType === 'doctor') {
+        tableName = 'doctors';
+        mobileField = 'mobile_number';
+      } else if (userType === 'hospital') {
+        tableName = 'hospitals';
+        mobileField = 'mobile';
+      } else if (userType === 'user') {
+        tableName = 'patients';
+        mobileField = 'mobile_number';
+      } else {
+        return false;
       }
       
       // Get user email from the appropriate table using mobile number
