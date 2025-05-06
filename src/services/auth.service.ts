@@ -338,7 +338,7 @@ class AuthService {
       let tableName: TableName;
       let mobileField: string;
       
-      // Use simple assignment instead of complex mapping that might cause type recursion
+      // Using simple if-else instead of complex mapping to avoid infinite type recursion
       if (userType === 'doctor') {
         tableName = 'doctors';
         mobileField = 'mobile_number';

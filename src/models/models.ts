@@ -100,7 +100,7 @@ export interface Consultation {
   consultation_date: string; // Match the exact database column names
   consultation_time: string; // Match the exact database column names
   place: "Hospital" | "Clinic";
-  place_id: string;
+  place_id?: string;
   prescription?: string;
   report_link?: string; // Added report_link property 
 }

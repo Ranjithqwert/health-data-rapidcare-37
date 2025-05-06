@@ -51,7 +51,23 @@ const Consultations: React.FC = () => {
       }
       
       console.log("Fetched consultations:", data);
-      setConsultations(data || []);
+      
+      // Map the snake_case database fields to camelCase model fields
+      const mappedConsultations = data?.map(item => ({
+        id: item.id,
+        patientId: item.patient_id,
+        patientName: item.patient_name,
+        doctorId: item.doctor_id,
+        doctorName: item.doctor_name,
+        consultation_date: item.consultation_date,
+        consultation_time: item.consultation_time,
+        place: item.place,
+        place_id: item.place_id,
+        prescription: item.prescription,
+        report_link: item.report_link
+      })) || [];
+      
+      setConsultations(mappedConsultations);
     } catch (error) {
       console.error("Error fetching consultations:", error);
       toast({
@@ -93,7 +109,7 @@ const Consultations: React.FC = () => {
                 <TableBody>
                   {consultations.map((consultation) => (
                     <TableRow key={consultation.id}>
-                      <TableCell>{consultation.doctor_name}</TableCell>
+                      <TableCell>{consultation.doctorName}</TableCell>
                       <TableCell>{consultation.consultation_date}</TableCell>
                       <TableCell>{consultation.consultation_time}</TableCell>
                       <TableCell>{consultation.place}</TableCell>
@@ -115,7 +131,7 @@ const Consultations: React.FC = () => {
                               </DialogHeader>
                               <div className="py-4">
                                 <div className="mb-4">
-                                  <h3 className="font-medium">Doctor: {consultation.doctor_name}</h3>
+                                  <h3 className="font-medium">Doctor: {consultation.doctorName}</h3>
                                   <p className="text-sm text-muted-foreground">
                                     {consultation.consultation_date} at {consultation.consultation_time}
                                   </p>
