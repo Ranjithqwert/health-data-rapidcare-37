@@ -5,6 +5,9 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { generate10DigitId } from "@/utils/email-utils";
 
+// Define valid table names to match Supabase's expected types
+type TableName = "admins" | "admission_reports" | "admissions" | "hospitals" | "patients" | "consultations" | "doctors" | "otps";
+
 class AuthService {
   // Check if user is logged in
   isLoggedIn(): boolean {
@@ -28,7 +31,7 @@ class AuthService {
   }
 
   // Generate a unique 10-digit ID
-  async generateUniqueId(tableName: string): Promise<string> {
+  async generateUniqueId(tableName: TableName): Promise<string> {
     let isUnique = false;
     let newId = '';
     
@@ -77,7 +80,7 @@ class AuthService {
         }
       } else {
         // For other user types, query the appropriate table
-        let tableName: string;
+        let tableName: TableName;
         switch (request.userType) {
           case 'doctor': tableName = 'doctors'; break;
           case 'hospital': tableName = 'hospitals'; break;
@@ -216,7 +219,7 @@ class AuthService {
         }
       } else {
         // For other user types, query the appropriate table
-        let tableName: string;
+        let tableName: TableName;
         let mobileField: string;
         
         switch (request.userType) {
@@ -332,7 +335,7 @@ class AuthService {
   async sendOTP(mobileNumber: string, userType: 'doctor' | 'hospital' | 'user'): Promise<boolean> {
     try {
       // Get the user's email based on userType and mobile number
-      let tableName: "doctors" | "hospitals" | "patients";
+      let tableName: TableName;
       let mobileField: string;
       
       switch (userType) {
@@ -551,7 +554,7 @@ class AuthService {
   async resetPassword(request: ResetPasswordRequest): Promise<boolean> {
     try {
       // Update password in the appropriate table
-      let tableName: "doctors" | "hospitals" | "patients";
+      let tableName: TableName;
       
       switch (request.userType) {
         case 'doctor': tableName = 'doctors'; break;
@@ -629,7 +632,7 @@ class AuthService {
       return null;
     }
     
-    let tableName: "doctors" | "hospitals" | "patients";
+    let tableName: TableName;
     switch (userType) {
       case 'doctor': tableName = 'doctors'; break;
       case 'hospital': tableName = 'hospitals'; break;
