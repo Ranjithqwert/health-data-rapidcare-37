@@ -28,12 +28,16 @@ class LoginService {
         }
       } else {
         // For other user types, query the appropriate table
+        // Type assertion to ensure tableName is of type TableName
         let tableName: TableName;
-        switch (request.userType) {
-          case 'doctor': tableName = 'doctors'; break;
-          case 'hospital': tableName = 'hospitals'; break;
-          case 'user': tableName = 'patients'; break;
-          default: return { success: false, error: 'Invalid user type' };
+        if (request.userType === 'doctor') {
+          tableName = 'doctors';
+        } else if (request.userType === 'hospital') {
+          tableName = 'hospitals'; 
+        } else if (request.userType === 'user') {
+          tableName = 'patients';
+        } else {
+          return { success: false, error: 'Invalid user type' };
         }
         
         // For testing purposes only - remove in production
@@ -156,24 +160,21 @@ class LoginService {
         }
       } else {
         // For other user types, query the appropriate table
+        // Use explicit type assignment to fix type instantiation error
         let tableName: TableName;
         let mobileField: string;
         
-        switch (request.userType) {
-          case 'doctor': 
-            tableName = 'doctors'; 
-            mobileField = 'mobile_number';
-            break;
-          case 'hospital': 
-            tableName = 'hospitals'; 
-            mobileField = 'mobile';
-            break;
-          case 'user': 
-            tableName = 'patients'; 
-            mobileField = 'mobile_number';
-            break;
-          default: 
-            return { success: false, error: 'Invalid user type' };
+        if (request.userType === 'doctor') {
+          tableName = 'doctors';
+          mobileField = 'mobile_number';
+        } else if (request.userType === 'hospital') {
+          tableName = 'hospitals';
+          mobileField = 'mobile';
+        } else if (request.userType === 'user') {
+          tableName = 'patients';
+          mobileField = 'mobile_number';
+        } else {
+          return { success: false, error: 'Invalid user type' };
         }
         
         try {

@@ -57,7 +57,7 @@ class OtpService {
       }
       
       const email = userData.email;
-      const userId = userData.id as string;
+      const userId = String(userData.id);
       
       // Generate a 6-digit OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
