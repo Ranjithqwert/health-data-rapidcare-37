@@ -1,4 +1,3 @@
-
 // Database models that will be used throughout the application
 
 export interface Admin {
@@ -99,7 +98,7 @@ export interface Consultation {
   doctorName: string;
   consultation_date: string; // Match the exact database column names
   consultation_time: string; // Match the exact database column names
-  place: "Hospital" | "Clinic";
+  place: string; // Changed from "Hospital" | "Clinic" to string to match database values
   place_id?: string;
   prescription?: string;
   report_link?: string; // Added report_link property 

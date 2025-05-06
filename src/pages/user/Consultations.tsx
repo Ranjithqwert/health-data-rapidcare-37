@@ -53,7 +53,7 @@ const Consultations: React.FC = () => {
       console.log("Fetched consultations:", data);
       
       // Map the snake_case database fields to camelCase model fields
-      const mappedConsultations = data?.map(item => ({
+      const mappedConsultations: Consultation[] = data?.map(item => ({
         id: item.id,
         patientId: item.patient_id,
         patientName: item.patient_name,

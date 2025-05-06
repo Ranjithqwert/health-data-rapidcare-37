@@ -1,4 +1,3 @@
-
 import { apiService } from "./api.service";
 import { LoginRequest, LoginWithMobileRequest, ResetPasswordRequest, LoginResponse } from "@/models/models";
 import { toast } from "@/components/ui/use-toast";
@@ -334,11 +333,10 @@ class AuthService {
   // Send OTP for password reset
   async sendOTP(mobileNumber: string, userType: 'doctor' | 'hospital' | 'user'): Promise<boolean> {
     try {
-      // Map the user type to the appropriate table name
+      // Simplified approach to avoid deep recursion
       let tableName: TableName;
       let mobileField: string;
       
-      // Using simple if-else instead of complex mapping to avoid infinite type recursion
       if (userType === 'doctor') {
         tableName = 'doctors';
         mobileField = 'mobile_number';
