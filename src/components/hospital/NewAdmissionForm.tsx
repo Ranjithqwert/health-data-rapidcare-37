@@ -92,6 +92,29 @@ const NewAdmissionForm = ({ onAdmissionCreated }: { onAdmissionCreated: () => vo
       const currentDate = format(new Date(), "yyyy-MM-dd");
       const currentTime = format(new Date(), "HH:mm:ss");
 
+      // Create storage bucket if it doesn't exist
+      try {
+        const { data: bucketList } = await supabase.storage.listBuckets();
+        const bucketExists = bucketList?.some(bucket => bucket.name === 'rapidcarereports');
+        
+        if (!bucketExists) {
+          console.log("Creating rapidcarereports bucket");
+          // If bucket doesn't exist, create it
+          const { error: bucketError } = await supabase
+            .storage
+            .createBucket('rapidcarereports', {
+              public: true
+            });
+          
+          if (bucketError) {
+            console.error("Error creating bucket:", bucketError);
+          }
+        }
+      } catch (bucketError) {
+        console.error("Error checking/creating bucket:", bucketError);
+        // Continue with admission creation even if bucket creation fails
+      }
+
       const { data, error } = await supabase
         .from('admissions')
         .insert({
@@ -121,11 +144,11 @@ const NewAdmissionForm = ({ onAdmissionCreated }: { onAdmissionCreated: () => vo
       
       // Notify parent component
       onAdmissionCreated();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating admission:", error);
       toast({
         title: "Error",
-        description: "Failed to create admission",
+        description: `Failed to create admission: ${error.message || 'Unknown error'}`,
         variant: "destructive"
       });
     } finally {

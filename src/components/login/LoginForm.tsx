@@ -34,6 +34,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ userType, title }) => {
     setLoading(true);
     
     try {
+      console.log(`Attempting login with: ${mobileNumber} / ${password} / ${userType}`);
       const response = await authService.loginWithMobile({
         mobileNumber,
         password,

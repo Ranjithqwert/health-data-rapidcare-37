@@ -1,3 +1,4 @@
+
 import { apiService } from "./api.service";
 import { LoginRequest, LoginWithMobileRequest, ResetPasswordRequest, LoginResponse } from "@/models/models";
 import { toast } from "@/components/ui/use-toast";
@@ -27,7 +28,7 @@ class AuthService {
   }
 
   // Generate a unique 10-digit ID
-  async generateUniqueId(tableName: "admins" | "admission_reports" | "admissions" | "hospitals" | "patients" | "consultations" | "doctors" | "otps"): Promise<string> {
+  async generateUniqueId(tableName: string): Promise<string> {
     let isUnique = false;
     let newId = '';
     
@@ -76,7 +77,7 @@ class AuthService {
         }
       } else {
         // For other user types, query the appropriate table
-        let tableName: "doctors" | "hospitals" | "patients";
+        let tableName: string;
         switch (request.userType) {
           case 'doctor': tableName = 'doctors'; break;
           case 'hospital': tableName = 'hospitals'; break;
@@ -215,7 +216,7 @@ class AuthService {
         }
       } else {
         // For other user types, query the appropriate table
-        let tableName: "doctors" | "hospitals" | "patients";
+        let tableName: string;
         let mobileField: string;
         
         switch (request.userType) {
