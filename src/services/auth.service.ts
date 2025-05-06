@@ -334,7 +334,7 @@ class AuthService {
   async sendOTP(mobileNumber: string, userType: 'doctor' | 'hospital' | 'user'): Promise<boolean> {
     try {
       // Define table name and mobile field based on user type
-      let tableName: string;
+      let tableName: TableName;
       let mobileField: string;
       
       if (userType === 'doctor') {
@@ -393,7 +393,7 @@ class AuthService {
       }
       
       const email = userData.email;
-      const userId = userData.id;
+      const userId = userData.id as string;
       
       // Generate a 6-digit OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
