@@ -333,8 +333,8 @@ class AuthService {
   // Send OTP for password reset
   async sendOTP(mobileNumber: string, userType: 'doctor' | 'hospital' | 'user'): Promise<boolean> {
     try {
-      // Simplified approach to avoid deep recursion
-      let tableName: TableName;
+      // Define table name and mobile field based on user type
+      let tableName: string;
       let mobileField: string;
       
       if (userType === 'doctor') {
@@ -347,18 +347,19 @@ class AuthService {
         tableName = 'patients';
         mobileField = 'mobile_number';
       } else {
+        console.error("Invalid user type for OTP");
         return false;
       }
       
       // Get user email from the appropriate table using mobile number
-      const { data: userData, error: userError } = await supabase
+      const userQuery = await supabase
         .from(tableName)
         .select('email, id')
         .eq(mobileField, mobileNumber)
         .maybeSingle();
         
-      if (userError) {
-        console.error("Error fetching user email:", userError);
+      if (userQuery.error) {
+        console.error("Error fetching user email:", userQuery.error);
         toast({
           title: "Error",
           description: "User not found or email not available.",
@@ -367,6 +368,8 @@ class AuthService {
         return false;
       }
 
+      const userData = userQuery.data;
+      
       // Ensure userData and email exist before proceeding
       if (!userData) {
         console.error("User email not found");
@@ -400,20 +403,20 @@ class AuthService {
       expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes from now
       
       // Check if an OTP entry already exists
-      const { data: existingOtp, error: selectError } = await supabase
+      const existingOtpQuery = await supabase
         .from('otps')
         .select()
         .eq('id', userId)
         .maybeSingle();
       
-      if (selectError) {
-        console.error("Error checking existing OTP:", selectError);
+      if (existingOtpQuery.error) {
+        console.error("Error checking existing OTP:", existingOtpQuery.error);
         return false;
       }
       
-      if (existingOtp) {
+      if (existingOtpQuery.data) {
         // Update existing OTP
-        const { error: updateError } = await supabase
+        const updateResult = await supabase
           .from('otps')
           .update({
             otp_value: otp,
@@ -421,13 +424,13 @@ class AuthService {
           })
           .eq('id', userId);
           
-        if (updateError) {
-          console.error("Error updating OTP:", updateError);
+        if (updateResult.error) {
+          console.error("Error updating OTP:", updateResult.error);
           return false;
         }
       } else {
         // Create new OTP entry
-        const { error: insertError } = await supabase
+        const insertResult = await supabase
           .from('otps')
           .insert({
             id: userId,
@@ -436,15 +439,15 @@ class AuthService {
             expired: false
           });
           
-        if (insertError) {
-          console.error("Error creating OTP:", insertError);
+        if (insertResult.error) {
+          console.error("Error creating OTP:", insertResult.error);
           return false;
         }
       }
       
       // Send email with OTP using our edge function
       try {
-        const { error } = await supabase.functions.invoke('send-otp-email', {
+        const emailResult = await supabase.functions.invoke('send-otp-email', {
           body: {
             email,
             otp,
@@ -453,8 +456,8 @@ class AuthService {
           }
         });
         
-        if (error) {
-          console.error("Error sending OTP email:", error);
+        if (emailResult.error) {
+          console.error("Error sending OTP email:", emailResult.error);
           toast({
             title: "Error",
             description: "Failed to send OTP email. Please try again.",
