@@ -24,46 +24,24 @@ const Admissions: React.FC = () => {
   const fetchAdmissions = async () => {
     try {
       setLoading(true);
+
+      if (!userId) {
+        toast({
+          title: "Error",
+          description: "User ID not found. Please login again.",
+          variant: "destructive",
+        });
+        return;
+      }
       
-      // For demonstration purposes, we'll create mock data
-      const mockAdmissions: Admission[] = [
-        {
-          id: "1",
-          patient_id: userId || "",
-          patient_name: authService.getUserName() || "Patient",
-          hospital_id: "hospital1",
-          hospital_name: "City General Hospital",
-          date_in: "2023-03-10",
-          time_in: "08:30 AM",
-          date_out: "2023-03-15",
-          time_out: "02:00 PM",
-          discharged: true,
-          recovered: true,
-          feedback: "Patient recovered well after treatment"
-        },
-        {
-          id: "2",
-          patient_id: userId || "",
-          patient_name: authService.getUserName() || "Patient",
-          hospital_id: "hospital2",
-          hospital_name: "Medical Center",
-          date_in: "2023-04-22",
-          time_in: "11:45 AM",
-          discharged: false,
-          recovered: false
-        }
-      ];
-      
-      setAdmissions(mockAdmissions);
-      
-      // In a real implementation, we would fetch from Supabase
-      /*
+      // Fetch from Supabase
       const { data, error } = await supabase
         .from('admissions')
         .select('*')
-        .eq('userId', userId);
+        .eq('patient_id', userId);
         
       if (error) {
+        console.error("Error fetching admissions:", error);
         toast({
           title: "Error fetching admissions",
           description: error.message,
@@ -72,8 +50,8 @@ const Admissions: React.FC = () => {
         return;
       }
       
+      console.log("Fetched admissions:", data);
       setAdmissions(data || []);
-      */
     } catch (error) {
       console.error("Error fetching admissions:", error);
       toast({
@@ -166,6 +144,20 @@ const Admissions: React.FC = () => {
                                   <div className="mt-4">
                                     <h4 className="font-medium mb-2">Doctor's Feedback:</h4>
                                     <p>{admission.feedback}</p>
+                                  </div>
+                                )}
+
+                                {admission.report_link && (
+                                  <div className="mt-4">
+                                    <h4 className="font-medium mb-2">Medical Report:</h4>
+                                    <a 
+                                      href={admission.report_link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:underline"
+                                    >
+                                      View Report
+                                    </a>
                                   </div>
                                 )}
                               </div>

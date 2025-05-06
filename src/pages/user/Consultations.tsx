@@ -25,44 +25,23 @@ const Consultations: React.FC = () => {
     try {
       setLoading(true);
       
-      // For demonstration purposes, we'll create mock data
-      const mockConsultations: Consultation[] = [
-        {
-          id: "1",
-          patientId: userId || "",
-          patientName: authService.getUserName() || "Patient",
-          doctorId: "doctor1",
-          doctorName: "Dr. Sarah Johnson",
-          consultation_date: "2023-05-15",
-          consultation_time: "10:00 AM",
-          place: "Hospital",
-          place_id: "hospital1",
-          prescription: "Take paracetamol twice daily for 3 days"
-        },
-        {
-          id: "2",
-          patientId: userId || "",
-          patientName: authService.getUserName() || "Patient",
-          doctorId: "doctor2",
-          doctorName: "Dr. Robert Miller",
-          consultation_date: "2023-05-20",
-          consultation_time: "2:30 PM",
-          place: "Clinic",
-          place_id: "clinic1",
-          prescription: "Complete bed rest for a week and follow up"
-        }
-      ];
-      
-      setConsultations(mockConsultations);
-      
-      // In a real implementation, we would fetch from Supabase
-      /*
+      if (!userId) {
+        toast({
+          title: "Error",
+          description: "User ID not found. Please login again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Fetch from Supabase
       const { data, error } = await supabase
         .from('consultations')
         .select('*')
-        .eq('patientId', userId);
+        .eq('patient_id', userId);
         
       if (error) {
+        console.error("Error fetching consultations:", error);
         toast({
           title: "Error fetching consultations",
           description: error.message,
@@ -71,8 +50,8 @@ const Consultations: React.FC = () => {
         return;
       }
       
+      console.log("Fetched consultations:", data);
       setConsultations(data || []);
-      */
     } catch (error) {
       console.error("Error fetching consultations:", error);
       toast({
@@ -114,7 +93,7 @@ const Consultations: React.FC = () => {
                 <TableBody>
                   {consultations.map((consultation) => (
                     <TableRow key={consultation.id}>
-                      <TableCell>{consultation.doctorName}</TableCell>
+                      <TableCell>{consultation.doctor_name}</TableCell>
                       <TableCell>{consultation.consultation_date}</TableCell>
                       <TableCell>{consultation.consultation_time}</TableCell>
                       <TableCell>{consultation.place}</TableCell>
@@ -136,7 +115,7 @@ const Consultations: React.FC = () => {
                               </DialogHeader>
                               <div className="py-4">
                                 <div className="mb-4">
-                                  <h3 className="font-medium">Doctor: {consultation.doctorName}</h3>
+                                  <h3 className="font-medium">Doctor: {consultation.doctor_name}</h3>
                                   <p className="text-sm text-muted-foreground">
                                     {consultation.consultation_date} at {consultation.consultation_time}
                                   </p>
@@ -149,6 +128,20 @@ const Consultations: React.FC = () => {
                                   <h4 className="font-medium mb-2">Prescription:</h4>
                                   <p>{consultation.prescription}</p>
                                 </div>
+
+                                {consultation.report_link && (
+                                  <div className="mt-4">
+                                    <h4 className="font-medium mb-2">Report:</h4>
+                                    <a 
+                                      href={consultation.report_link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:underline"
+                                    >
+                                      View Report
+                                    </a>
+                                  </div>
+                                )}
                               </div>
                             </DialogContent>
                           </Dialog>
