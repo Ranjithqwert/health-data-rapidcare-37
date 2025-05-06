@@ -7,7 +7,8 @@ import { loginService } from "./login.service";
 import { otpService } from "./otp.service";
 import { passwordService } from "./password.service";
 import { userService } from "./user.service";
-import { TableName } from "./auth.types";
+import { villageService } from "./village.service";
+import { TableName, UserType } from "./auth.types";
 
 class AuthService {
   // Session management
@@ -33,6 +34,9 @@ class AuthService {
   // OTP functions
   sendOTP = otpService.sendOTP.bind(otpService);
   verifyOTP = otpService.verifyOTP.bind(otpService);
+  
+  // Village verification
+  verifyVillage = villageService.verifyVillage.bind(villageService);
   
   // Password management
   resetPassword = passwordService.resetPassword.bind(passwordService);

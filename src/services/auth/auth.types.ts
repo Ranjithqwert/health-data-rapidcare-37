@@ -1,6 +1,10 @@
 
-// Types related to authentication
-import { LoginRequest, LoginWithMobileRequest, ResetPasswordRequest, LoginResponse } from "@/models/models";
+export type TableName = 'doctors' | 'hospitals' | 'patients' | 'admins' | 'admission_reports' | 'admissions' | 'consultations' | 'otps';
 
-// Define valid table names to match Supabase's expected types
-export type TableName = "admins" | "admission_reports" | "admissions" | "hospitals" | "patients" | "consultations" | "doctors" | "otps";
+export type UserType = 'doctor' | 'hospital' | 'user' | 'admin';
+
+export interface VillageVerificationRequest {
+  userId: string;
+  village: string;
+  userType: 'doctor' | 'hospital' | 'user';
+}

@@ -14,15 +14,15 @@ interface ForgotPasswordModalProps {
 }
 
 const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose, userType }) => {
-  const [step, setStep] = useState<'enterMobile' | 'enterOTP' | 'resetPassword'>('enterMobile');
+  const [step, setStep] = useState<'enterMobile' | 'verifyVillage' | 'resetPassword'>('enterMobile');
   const [mobileNumber, setMobileNumber] = useState("");
-  const [otp, setOtp] = useState("");
+  const [village, setVillage] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState("");
 
-  const handleSendOTP = async () => {
+  const handleFindUser = async () => {
     if (!mobileNumber) {
       toast({
         title: "Error",
@@ -74,18 +74,12 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
       }
       
       setUserId(data.id);
-      
-      // Now send the OTP
-      const success = await authService.sendOTP(mobileNumber, userType);
-      
-      if (success) {
-        setStep('enterOTP');
-      }
+      setStep('verifyVillage');
     } catch (error) {
-      console.error("Error sending OTP:", error);
+      console.error("Error finding user:", error);
       toast({
         title: "Error",
-        description: "Failed to send OTP. Please try again.",
+        description: "Failed to find user. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -93,11 +87,11 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
     }
   };
 
-  const handleVerifyOTP = async () => {
-    if (!otp) {
+  const handleVerifyVillage = async () => {
+    if (!village) {
       toast({
         title: "Error",
-        description: "Please enter the OTP",
+        description: "Please enter your village name",
         variant: "destructive",
       });
       return;
@@ -106,16 +100,16 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
     setLoading(true);
     
     try {
-      const success = await authService.verifyOTP(userId, otp, userType);
+      const success = await authService.verifyVillage(userId, village, userType);
       
       if (success) {
         setStep('resetPassword');
       }
     } catch (error) {
-      console.error("Error verifying OTP:", error);
+      console.error("Error verifying village:", error);
       toast({
         title: "Error",
-        description: "Failed to verify OTP. Please try again.",
+        description: "Failed to verify village name. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -174,7 +168,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
   const handleClose = () => {
     setStep('enterMobile');
     setMobileNumber("");
-    setOtp("");
+    setVillage("");
     setNewPassword("");
     setConfirmPassword("");
     setLoading(false);
@@ -187,7 +181,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
         <DialogHeader>
           <DialogTitle>
             {step === 'enterMobile' ? 'Forgot Password' : 
-             step === 'enterOTP' ? 'Enter OTP' : 'Reset Password'}
+             step === 'verifyVillage' ? 'Verify Village' : 'Reset Password'}
           </DialogTitle>
         </DialogHeader>
         
@@ -212,30 +206,30 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
               <Button type="button" variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
-              <Button type="button" onClick={handleSendOTP} disabled={loading}>
-                {loading ? "Sending..." : "Send OTP"}
+              <Button type="button" onClick={handleFindUser} disabled={loading}>
+                {loading ? "Finding..." : "Next"}
               </Button>
             </DialogFooter>
           </div>
         )}
         
-        {step === 'enterOTP' && (
+        {step === 'verifyVillage' && (
           <div className="space-y-4">
             <div>
-              <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
-                OTP
+              <label htmlFor="village" className="block text-sm font-medium text-gray-700 mb-1">
+                Village Name
               </label>
               <Input
-                id="otp"
+                id="village"
                 type="text"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="Enter the OTP sent to your email"
+                value={village}
+                onChange={(e) => setVillage(e.target.value)}
+                placeholder="Enter your village name for verification"
                 className="w-full"
                 disabled={loading}
               />
               <p className="text-xs text-gray-500 mt-1">
-                An OTP has been sent to your registered email. Please check your inbox.
+                Please enter the village name you provided during registration for security verification.
               </p>
             </div>
             
@@ -243,8 +237,8 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
               <Button type="button" variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
-              <Button type="button" onClick={handleVerifyOTP} disabled={loading}>
-                {loading ? "Verifying..." : "Verify OTP"}
+              <Button type="button" onClick={handleVerifyVillage} disabled={loading}>
+                {loading ? "Verifying..." : "Verify Village"}
               </Button>
             </DialogFooter>
           </div>
