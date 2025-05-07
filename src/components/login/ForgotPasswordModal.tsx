@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { authService } from "@/services/auth.service";
 import { supabase } from "@/integrations/supabase/client";
+import { VillageVerificationRequest } from "@/services/auth/auth.types";
 
 interface ForgotPasswordModalProps {
   open: boolean;
@@ -100,7 +100,17 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
     setLoading(true);
     
     try {
-      const success = await authService.verifyVillage(userId, village, userType);
+      const verificationRequest: VillageVerificationRequest = {
+        userId,
+        village,
+        userType
+      };
+      
+      const success = await authService.verifyVillage(
+        verificationRequest.userId,
+        verificationRequest.village,
+        verificationRequest.userType
+      );
       
       if (success) {
         setStep('resetPassword');
