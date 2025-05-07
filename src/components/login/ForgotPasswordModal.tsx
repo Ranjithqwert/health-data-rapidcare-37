@@ -57,6 +57,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
           throw new Error('Invalid user type');
       }
       
+      // Using the explicitly typed tableName variable
       const { data, error } = await supabase
         .from(tableName)
         .select('id')
