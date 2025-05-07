@@ -1,3 +1,4 @@
+
 // Service for login functionality
 import { supabase } from "@/integrations/supabase/client";
 import { LoginRequest, LoginWithMobileRequest, LoginResponse } from "@/models/models";
@@ -161,7 +162,7 @@ class LoginService {
       } else {
         // For other user types, query the appropriate table
         let tableName: TableName;
-        let mobileField: string;
+        let mobileField: "mobile_number" | "mobile";
         
         // Explicit assignment of tableName and mobileField
         if (request.userType === 'doctor') {
