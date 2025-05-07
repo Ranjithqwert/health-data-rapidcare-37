@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -6,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { authService } from "@/services/auth.service";
 import { supabase } from "@/integrations/supabase/client";
-import { TableName } from "@/services/auth/auth.types";
 
 interface ForgotPasswordModalProps {
   open: boolean;
@@ -37,8 +35,8 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
     
     try {
       // Define table name and field for lookup based on user type
-      let tableName: TableName;
-      let mobileField: string;
+      let tableName: "doctors" | "hospitals" | "patients";
+      let mobileField: "mobile_number" | "mobile";
       
       switch (userType) {
         case 'doctor': 
@@ -57,7 +55,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
           throw new Error('Invalid user type');
       }
       
-      // Using the explicitly typed tableName variable
+      // Using the explicitly typed tableName and mobileField variables
       const { data, error } = await supabase
         .from(tableName)
         .select('id')

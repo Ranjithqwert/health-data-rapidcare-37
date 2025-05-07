@@ -11,21 +11,33 @@ class LoginService {
     try {
       // Different login logic for each user type
       if (request.userType === 'admin') {
-        // For admin, use a special table or check
-        if (request.userId === 'admin' && request.password === 'admin123') {
-          // Mock admin login for testing
-          const token = 'admin-token-' + Date.now();
-          sessionService.setSessionData(token, request.userId, request.userType, 'Administrator');
+        // For admin, use the admins table in the database
+        const { data, error } = await supabase
+          .from('admins')
+          .select('id, username')
+          .eq('username', request.userId)
+          .eq('password', request.password)
+          .maybeSingle();
           
-          return {
-            success: true,
-            token,
-            userId: request.userId,
-            name: 'Administrator'
-          };
-        } else {
+        if (error) {
+          console.error("Admin login error:", error);
+          return { success: false, error: 'Database error' };
+        }
+        
+        if (!data) {
           return { success: false, error: 'Invalid admin credentials' };
         }
+        
+        // Admin login successful
+        const token = 'admin-token-' + Date.now();
+        sessionService.setSessionData(token, data.id, request.userType, data.username);
+        
+        return {
+          success: true,
+          token,
+          userId: data.id,
+          name: data.username
+        };
       } else {
         // For other user types, query the appropriate table
         let tableName: TableName;
@@ -144,24 +156,36 @@ class LoginService {
     try {
       // Different login logic for each user type
       if (request.userType === 'admin') {
-        // For admin, use a special table or check
-        if (request.mobileNumber === 'admin' && request.password === 'admin123') {
-          // Mock admin login for testing
-          const token = 'admin-token-' + Date.now();
-          sessionService.setSessionData(token, 'admin', request.userType, 'Administrator');
+        // For admin, check against the admins table
+        const { data, error } = await supabase
+          .from('admins')
+          .select('id, username')
+          .eq('username', request.mobileNumber)
+          .eq('password', request.password)
+          .maybeSingle();
           
-          return {
-            success: true,
-            token,
-            userId: 'admin',
-            name: 'Administrator'
-          };
-        } else {
+        if (error) {
+          console.error("Admin login error:", error);
+          return { success: false, error: 'Database error' };
+        }
+        
+        if (!data) {
           return { success: false, error: 'Invalid admin credentials' };
         }
+        
+        // Admin login successful
+        const token = 'admin-token-' + Date.now();
+        sessionService.setSessionData(token, data.id, request.userType, data.username);
+        
+        return {
+          success: true,
+          token,
+          userId: data.id,
+          name: data.username
+        };
       } else {
         // For other user types, query the appropriate table
-        let tableName: TableName;
+        let tableName: "doctors" | "hospitals" | "patients";
         let mobileField: "mobile_number" | "mobile";
         
         // Explicit assignment of tableName and mobileField
