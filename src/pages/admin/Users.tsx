@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -243,19 +242,25 @@ const Users: React.FC = () => {
     if (!confirm("Are you sure you want to delete this user?")) return;
     
     try {
-      // In a real implementation, we would delete from Supabase
-      // For now, we'll just update our local state
-      const updatedUsers = users.filter(user => user.userId !== userId);
-      setUsers(updatedUsers);
-      
-      /* 
+      // Delete the user from Supabase
       const { error } = await supabase
         .from('patients')
         .delete()
         .eq('id', userId);
         
-      if (error) throw error;
-      */
+      if (error) {
+        console.error("Error deleting user:", error);
+        toast({
+          title: "Error",
+          description: "Failed to delete user: " + error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Update local state only after successful deletion
+      const updatedUsers = users.filter(user => user.userId !== userId);
+      setUsers(updatedUsers);
       
       toast({
         title: "Success",
@@ -265,7 +270,7 @@ const Users: React.FC = () => {
       console.error("Error deleting user:", error);
       toast({
         title: "Error",
-        description: "Failed to delete user",
+        description: "Failed to delete user: " + (error as Error).message,
         variant: "destructive",
       });
     }
