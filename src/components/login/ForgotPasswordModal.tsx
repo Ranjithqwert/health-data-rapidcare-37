@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -35,8 +36,8 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
     setLoading(true);
     
     try {
-      // First, get the user's ID from the mobile number
-      let tableName: "doctors" | "hospitals" | "patients";
+      // Define table name and field for lookup based on user type
+      let tableName: string;
       let mobileField: string;
       
       switch (userType) {
@@ -73,7 +74,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
         return;
       }
       
-      setUserId(data.id);
+      setUserId(String(data.id));
       setStep('verifyVillage');
     } catch (error) {
       console.error("Error finding user:", error);
@@ -100,17 +101,8 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
     setLoading(true);
     
     try {
-      const verificationRequest: VillageVerificationRequest = {
-        userId,
-        village,
-        userType
-      };
-      
-      const success = await authService.verifyVillage(
-        verificationRequest.userId,
-        verificationRequest.village,
-        verificationRequest.userType
-      );
+      // Call the verifyVillage function with simple parameters to avoid deep type instantiation
+      const success = await authService.verifyVillage(userId, village, userType);
       
       if (success) {
         setStep('resetPassword');

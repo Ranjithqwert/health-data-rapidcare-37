@@ -28,8 +28,9 @@ class LoginService {
         }
       } else {
         // For other user types, query the appropriate table
-        // Type assertion to ensure tableName is of type TableName
         let tableName: TableName;
+        
+        // Explicitly determine the table name based on user type
         if (request.userType === 'doctor') {
           tableName = 'doctors';
         } else if (request.userType === 'hospital') {
@@ -160,10 +161,10 @@ class LoginService {
         }
       } else {
         // For other user types, query the appropriate table
-        // Use explicit type assignment to fix type instantiation error
         let tableName: TableName;
         let mobileField: string;
         
+        // Explicit assignment of tableName and mobileField
         if (request.userType === 'doctor') {
           tableName = 'doctors';
           mobileField = 'mobile_number';
@@ -210,7 +211,7 @@ class LoginService {
           // Ensuring data is not null before accessing its properties
           if (data) {
             // Check if id exists and is of the right type
-            if ('id' in data && data.id !== null && (typeof data.id === 'string' || typeof data.id === 'number')) {
+            if ('id' in data && data.id !== null) {
               userId = String(data.id);
             }
             
