@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { authService } from "@/services/auth.service";
 import { supabase } from "@/integrations/supabase/client";
-import { VillageVerificationRequest } from "@/services/auth/auth.types";
+import { TableName } from "@/services/auth/auth.types";
 
 interface ForgotPasswordModalProps {
   open: boolean;
@@ -37,7 +37,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
     
     try {
       // Define table name and field for lookup based on user type
-      let tableName: string;
+      let tableName: TableName;
       let mobileField: string;
       
       switch (userType) {

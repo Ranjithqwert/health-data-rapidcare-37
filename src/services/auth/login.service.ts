@@ -1,8 +1,7 @@
-
 // Service for login functionality
 import { supabase } from "@/integrations/supabase/client";
 import { LoginRequest, LoginWithMobileRequest, LoginResponse } from "@/models/models";
-import { TableName } from "./auth.types";
+import { TableName, UserType } from "./auth.types";
 import { sessionService } from "./session.service";
 
 class LoginService {
